@@ -9,10 +9,12 @@ CREATE TABLE ENSEIGNANT (
 CREATE TABLE UTILISATEUR(
 	ID_connexion int AUTO_INCREMENT PRIMARY KEY,
 	mot_de_passe varchar(255) NOT NULL,
-	role_user varchar(50) NOT NULL,
+	role_user varchar(50) NOT NULL check (role_user = "directeur" or role_user = "enseignant"),
 	fk_id_enseignant int,
 	FOREIGN KEY(fk_id_enseignant) REFERENCES ENSEIGNANT(ID_enseignant)
 );
+INSERT INTO UTILISATEUR(mot_de_passe, role_user, fk_id_enseignant)
+VALUES ('$2y$10$EJ/pYuI/NjQSzDwL5wbesOZT8X0KQZrelz1z.cn4B9m0Jfp0AQAKO', "directrice", );
 
 CREATE TABLE MATIERE (
 	ID_matiere int AUTO_INCREMENT PRIMARY KEY,

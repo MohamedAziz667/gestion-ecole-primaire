@@ -1,0 +1,53 @@
+C'est quoi une session en PHP ? 👇
+Imagine que tu te connectes à Gmail. Tu ouvres ta boîte mail, tu cliques sur un email, tu vas dans les paramètres... À chaque page tu es toujours connecté.
+Mais HTTP est un protocole sans mémoire — chaque page est une nouvelle requête indépendante.
+
+La session c'est ce qui permet à PHP de se souvenir que c'est toujours toi d'une page à l'autre.
+
+Concrètement en PHP 👇
+On démarre une session avec :
+session_start();
+On stocke une information dans la session :
+$_SESSION['role'] = 'directeur';
+On récupère cette information sur une autre page :
+echo $_SESSION['role']; // affiche "directeur"
+On détruit la session (déconnexion) :
+session_destroy();
+
+Donc notre session contiendra 👇
+
+id — pour identifier l'utilisateur
+matricule — pour l'afficher si besoin
+nom — pour afficher "Bonjour Monsieur Ndiaye"
+role — pour gérer les droits d'accès
+id_classe — pour restreindre l'accès de l'enseignant à sa classe
+
+C'est quoi une injection SQL ? 👇
+Imagine que dans le champ matricule du formulaire, quelqu'un tape : ' OR '1'='1
+Si on met directement cette valeur dans la requête :
+WHERE matricule = '' OR '1'='1'
+'1'='1' c'est toujours vrai — donc cette requête retournera tous les utilisateurs de la base ! N'importe qui pourrait se connecter sans mot de passe. ❌
+
+La solution — les requêtes préparées 👇
+En PDO on sépare la requête des données en deux étapes :
+Étape 1 — On prépare la requête avec un paramètre
+
+$requete = $connexion->prepare("SELECT * FROM ... WHERE matricule = :matricule");
+Étape 2 — On lie la valeur au paramètre et on exécute
+$requete->execute([':matricule' => $matricule]);
+
+La différence 👇
+
+fetchAll() — récupère tous les résultats → retourne une liste
+fetch() — récupère un seul résultat → retourne une seule ligne
+
+Dans notre cas 👇
+On cherche un utilisateur par son matricule — il ne peut y en avoir qu'un seul. Donc on utilise fetch().
+
+En PDO : $variable = $requete->fetch();
+
+On a récupéré l'utilisateur depuis la base de données. Maintenant on doit vérifier le mot de passe.
+$password == $utilisateur['mot_de_passe'] ❌
+il faut : password_verify($password, $hash)
+
+Elle retourne true si le mot de passe correspond, false sinon.
