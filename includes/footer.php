@@ -1,3 +1,4 @@
+</div>        
         <footer class="py-4 bg-light mt-auto">
 
             <div class="container-fluid px-4">
@@ -23,6 +24,7 @@
 </div>
 
 <!-- Bootstrap JS -->
+<script src="http://localhost/Gestion_Ecole_Primaire/public/js/bootstrap.bundle.min.js"></script>
 <script src="http://localhost/Gestion_Ecole_Primaire/public/js/scripts.js"></script>
 
 <!-- DataTables -->

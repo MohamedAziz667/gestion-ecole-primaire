@@ -61,7 +61,7 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item" href="#">
+                    <a class="dropdown-item" href="/Gestion_Ecole_Primaire/auth/logout.php">
                         Déconnexion
                     </a>
                 </li>
