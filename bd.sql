@@ -21,13 +21,6 @@ CREATE TABLE MATIERE (
 	nom_matiere varchar(50) NOT NULL
 );
 
-CREATE TABLE COMPOSITION (
-	ID_composition int AUTO_INCREMENT PRIMARY KEY,
-	numero int NOT NULL check (numero BETWEEN 1 AND 3),
-	date_composition DATE NOT NULL,
-	trimestre int NOT NULL check (trimestre BETWEEN 1 AND 3)
-);
-
 CREATE TABLE ELEVE(
 	Id_eleve int AUTO_INCREMENT PRIMARY KEY,
 	nom_eleve varchar(50) NOT NULL,
@@ -40,6 +33,15 @@ CREATE TABLE ELEVE(
 CREATE TABLE ANNEE_SCOLAIRE(
 	Id_anneeScolaire int AUTO_INCREMENT PRIMARY KEY,
 	annee varchar(50) NOT NULL
+);
+
+CREATE TABLE COMPOSITION (
+	ID_composition int AUTO_INCREMENT PRIMARY KEY,
+	numero int NOT NULL check (numero BETWEEN 1 AND 3),
+	date_composition DATE NOT NULL,
+	trimestre int NOT NULL check (trimestre BETWEEN 1 AND 3),
+	fk_id_anneeScolaire INT NOT NULL,
+	FOREIGN KEY(fk_id_anneeScolaire) REFERENCES ANNEE_SCOLAIRE(Id_anneeScolaire)
 );
 
 CREATE TABLE CLASSE	(
