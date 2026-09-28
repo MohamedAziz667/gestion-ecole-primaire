@@ -5,6 +5,20 @@
     include_once('../includes/sidebar.php');
     include_once('../configuration/connexion.php');
 
+    function charger_eleves($connexion, $classe, $annee){
+        $rqtEleve = "SELECT E.Id_eleve, E.nom_eleve, E.prenom_eleve, C.nom_classe
+                             FROM eleve E
+                             JOIN inscription I ON E.Id_eleve = I.fk_id_eleve
+                             JOIN classe C ON I.fk_id_classe = C.Id_classe
+                             WHERE I.fk_id_classe = ?
+                             AND I.fk_id_anneeScolaire = ?
+                             ORDER BY nom_eleve ASC, prenom_eleve ASC;";
+        $stmtEleve = $connexion->prepare($rqtEleve);
+        $stmtEleve->execute([$classe, $annee]);
+        $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
+        return $liste_eleve;
+    }
+
     $rqtAnnee = "SELECT A.Id_anneeScolaire, A.annee
                  FROM annee_scolaire A
                  ORDER BY CAST(SUBSTRING(A.annee, 1, 4) AS UNSIGNED) DESC;";
@@ -30,6 +44,7 @@
     $idClasseSelectionnee = "";
     $idMatiereSelectionnee = "";
     $idCompositionSelectionnee = "";
+    $notesSaisies = [];
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($_POST["action"] === "charger") {
             if (!empty($_POST["fk_id_anneeScolaire"]) && !empty($_POST["fk_id_classe"])) {
@@ -43,17 +58,7 @@
                     $idComposition = $_POST["fk_id_composition"];
                     $idCompositionSelectionnee = $idComposition;
                 }
-                $rqtEleve = "SELECT E.Id_eleve, E.nom_eleve, E.prenom_eleve, C.nom_classe
-                             FROM eleve E
-                             JOIN inscription I ON E.Id_eleve = I.fk_id_eleve
-                             JOIN classe C ON I.fk_id_classe = C.Id_classe
-                             WHERE I.fk_id_classe = ?
-                             AND I.fk_id_anneeScolaire = ?
-                             ORDER BY nom_eleve ASC, prenom_eleve ASC;";
-            
-                $stmtEleve = $connexion->prepare($rqtEleve);
-                $stmtEleve->execute([$idClasse, $idAnnee]);
-                $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
+                $liste_eleve = charger_eleves($connexion, $idClasse, $idAnnee);
             }
 
         }
@@ -65,18 +70,15 @@
                     $classe = $_POST["fk_id_classe"];
                     $matiere = $_POST["fk_id_matiere"];
                     $composition = $_POST["fk_id_composition"];
+                    $notesSaisies = $_POST["note"];
 
-                    $rqtEleve = "SELECT E.Id_eleve, E.nom_eleve, E.prenom_eleve, C.nom_classe
-                             FROM eleve E
-                             JOIN inscription I ON E.Id_eleve = I.fk_id_eleve
-                             JOIN classe C ON I.fk_id_classe = C.Id_classe
-                             WHERE I.fk_id_classe = ?
-                             AND I.fk_id_anneeScolaire = ?
-                             ORDER BY nom_eleve ASC, prenom_eleve ASC;";
-            
-                $stmtEleve = $connexion->prepare($rqtEleve);
-                $stmtEleve->execute([$classe, $annee]);
-                $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
+                    $idAnneeSelectionnee = $annee;
+                    $idClasseSelectionnee = $classe;
+                    $idMatiereSelectionnee = $matiere;
+                    $idCompositionSelectionnee = $composition;
+
+                    $liste_eleve = charger_eleves($connexion, $classe, $annee);
+
                 
                     foreach ($_POST["note"] as $idEleve => $note) {
                         if ($note === "") {
@@ -107,6 +109,8 @@
                                 $stmtEvaluation->execute([$note, $idEleve, $classe, $annee, $matiere, $composition]);
                             }
                             $connexion->commit();
+                            $notesSaisies = [];
+                            echo "Les évaluations ont été enregistrées avec succès.";
                         } catch (PDOException $messageErreur) {
                             $connexion->rollBack();
                             $code = $messageErreur->errorInfo[1];
@@ -357,19 +361,11 @@
                 </div>
 
 
-                <span class="badge bg-primary">
-
-                    <!--
-                        La matière et la composition sélectionnées
-                        seront affichées ici.
-                    -->
-
+                <span class="badge bg-primary" id="matiereComposition">
                     Matière - Composition
-
                 </span>
 
             </div>
-
 
             <div class="card-body">
 
@@ -427,6 +423,7 @@
                                         <input
                                             type="number"
                                             name="note[<?= $eleve["Id_eleve"]; ?>]"
+                                            value="<?= $notesSaisies[$eleve["Id_eleve"]] ?? ""; ?>"
                                         >
 
                                     </td>
@@ -489,6 +486,19 @@
 
 <script>
     const anneeScolaire = document.getElementById("anneeScolaire");
+    const matiere = document.getElementById("matiere");
+    const composition = document.getElementById("composition");
+    const matiereComposition = document.getElementById("matiereComposition");
+
+    function mettreAJourMatiereComposition() {
+        const matiereStocker = matiere.options[matiere.selectedIndex].text;
+        const compositionStocker = composition.options[composition.selectedIndex].text;
+        matiereComposition.textContent = matiereStocker + " - " + compositionStocker;
+    }
+
+    matiere.addEventListener("change", mettreAJourMatiereComposition);
+    composition.addEventListener("change", mettreAJourMatiereComposition);
+
     const idCompositionSelectionnee = <?= json_encode($idCompositionSelectionnee); ?>;
     const idAnneeSelectionnee = <?= json_encode($idAnneeSelectionnee); ?>;
 
@@ -511,7 +521,8 @@
                 })
                 selectComposition.disabled = false;
                 selectComposition.required = true;
-                
+
+                mettreAJourMatiereComposition();
             })
     }
     anneeScolaire.addEventListener("change", function(){
