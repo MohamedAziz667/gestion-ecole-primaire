@@ -4,18 +4,22 @@
     include_once('../includes/navbar.php');
     include_once('../includes/sidebar.php');
     include_once('../configuration/connexion.php');
-
-    $rqtEleve = "SELECT E.* ,C.nom_classe, A.annee
-                FROM eleve E
-                JOIN inscription I ON E.Id_eleve = I.fk_id_eleve
-                JOIN classe C ON I.fk_id_classe = C.Id_classe
-                JOIN annee_scolaire A ON I.fk_id_anneeScolaire = A.Id_anneeScolaire
-                WHERE I.fk_id_anneeScolaire = (
-                    SELECT A.Id_anneeScolaire
-                    FROM annee_scolaire A
-                    ORDER BY CAST(SUBSTRING(A.annee, 1, 4) AS UNSIGNED) DESC
-                    LIMIT 1
-                );";
+    $message = $_SESSION['message'] ?? null;
+    unset($_SESSION['message']);
+    $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, C.nom_classe, A.annee
+                    FROM inscription I
+                    JOIN (
+                        SELECT fk_id_eleve, MAX(fk_id_anneeScolaire) AS derniere_annee
+                        FROM inscription
+                        GROUP BY fk_id_eleve
+                    ) D
+                    ON I.fk_id_eleve = D.fk_id_eleve AND I.fk_id_anneeScolaire = D.derniere_annee
+                    JOIN classe C
+                    ON I.fk_id_classe = C.Id_classe
+                    JOIN annee_scolaire A
+                    ON I.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    JOIN eleve E
+                    ON I.fk_id_eleve = E.Id_eleve;";
     $stmtEleve = $connexion->prepare($rqtEleve);
     $stmtEleve->execute();
     $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
@@ -56,9 +60,13 @@
 
     </ol>
 
+    <?php if($message): ?>
+        <div class="alert alert-info"> 
+        <?= $message; ?> </div> 
+    <?php endif; ?>
 
 
-    <form action="#" method="POST">
+    <form id="formInscription" action="../traitements/traiter_ajout_inscription.php" method="POST" novalidate>
 
         <!-- ========================= -->
         <!-- TYPE D'INSCRIPTION -->
@@ -184,7 +192,7 @@
                 <?php foreach($liste_eleve as $eleve): ?>
 
                     <option
-                        value="<?= $eleve['Id_eleve']; ?>"
+                        value="<?= $eleve['fk_id_eleve']; ?>"
                         data-nom="<?= $eleve['nom_eleve']; ?>"
                         data-prenom="<?= $eleve['prenom_eleve']; ?>"
                         data-sexe="<?= $eleve['sexe_eleve']; ?>"
@@ -335,6 +343,7 @@
                         <select
                             class="form-select"
                             name="fk_id_classe"
+                            id="fk_id_classe"
                             required
                         >
 
@@ -362,6 +371,7 @@
                         <select
                             class="form-select"
                             name="fk_id_anneeScolaire"
+                            id="fk_id_anneeScolaire"
                             required
                         >
 
@@ -378,31 +388,6 @@
 
                     </div>
 
-                    <div class="col-md-4 mb-3">
-
-                        <label class="form-label">
-
-                            Statut
-
-                        </label>
-
-                        <select
-                            class="form-select"
-                            name="statut"
-                            required
-                        >
-
-                            <option value="admis">
-                                Admis
-                            </option>
-
-                            <option value="ajourne">
-                                Ajourné
-                            </option>
-
-                        </select>
-
-                    </div>
 
                 </div>
 
@@ -446,6 +431,8 @@
     const zoneInformationsEleve = document.getElementById("zoneInformationsEleve");
 
     const selectEleve = document.getElementById("selectEleve");
+    const optionsOriginales = Array.from(selectEleve.options).slice(1);
+    console.log("Options originales :", optionsOriginales.length);
     const nomEleve = document.getElementById("nomEleve")
     const prenomEleve = document.getElementById("prenomEleve")
     const sexeEleve = document.getElementById("sexeEleve");
@@ -453,6 +440,69 @@
     const dateNaissance = document.getElementById("dateNaissance");
 
     const rechercheEleve = document.getElementById("rechercheEleve");
+
+    const formInscription = document.getElementById("formInscription");
+    
+    formInscription.addEventListener("submit", function(event){
+        console.log("SUBMIT");
+        const fk_id_anneeScolaire = document.getElementById("fk_id_anneeScolaire");
+        const fk_id_classe = document.getElementById("fk_id_classe");
+        const nomEleve = document.getElementById("nomEleve").value.trim();
+        const prenomEleve = document.getElementById("prenomEleve").value.trim();
+        const sexeEleve = document.getElementById("sexeEleve").value.trim();
+        const adresseEleve = document.getElementById("adresseEleve").value.trim();
+        const dateNaissance = document.getElementById("dateNaissance").value.trim();
+        let erreur = false;
+        if (ancien.checked) {
+            console.log("Élève déjà enregistré");
+            if (selectEleve.value === "") {
+                erreur = true;
+                alert("Veuillez sélectionner un élève.");
+            }
+        } else if (nouveau.checked) {
+            console.log("Nouvel élève");
+            if (nomEleve === "") {
+                erreur = true;
+                alert("Le champ nom est obligatoire.");
+            }else if(nomEleve.length < 2){
+                erreur = true;
+                alert("Le nom doit contenir au moins 2 caractères.");
+            }
+            if (prenomEleve === "") {
+                erreur = true;
+                alert("Le champ prenom est obligatoire.");
+            }else if(prenomEleve.length < 2){
+                erreur = true;
+                alert("Le prénom doit contenir au moins 2 caractères.");
+            }
+            if (sexeEleve === "") {
+                erreur = true;
+                alert("Le champ sexe est obligatoire.");
+            }
+            if (adresseEleve === "") {
+                erreur = true;
+                alert("Le champ adresse est obligatoire.");
+            }else if(adresseEleve.length < 2){
+                erreur = true;
+                alert("L'adresse doit contenir au moins 2 caractères.");
+            }
+            if (dateNaissance === "") {
+                erreur = true;
+                alert("Le champ date naissance est obligatoire.");
+            }
+        }
+        if (fk_id_classe.value === "") {
+                erreur = true;
+                alert("Le champ classe est obligatoire.");
+            }
+            if (fk_id_anneeScolaire.value === "") {
+                erreur = true;
+                alert("Le champ année est obligatoire.");
+            }
+        if (erreur === true) {
+            event.preventDefault();
+        }
+    });
 
     ancien.addEventListener("change", function(){
         zoneInformationsEleve.style.display = "";
@@ -493,15 +543,31 @@
     });
 
     rechercheEleve.addEventListener("input", function(){
-       const options = selectEleve.getElementsByTagName("option");
-       for(option of options){
+        console.log("Recherche :", rechercheEleve.value);
+        selectEleve.innerHTML = "";
+        const optionVide = document.createElement("option");
+        optionVide.value = "";
+        optionVide.textContent = "-- Sélectionner un élève --";
+        selectEleve.appendChild(optionVide);
+       for(const option of optionsOriginales){
+        console.log("Option :", option.textContent);
         const correspond = option.textContent.toLowerCase().includes(rechercheEleve.value.toLowerCase());
-        if (correspond == true) {
-            option.style.display = "";
-        } else {
-            option.style.display = "none";
+        if(correspond === true){
+            console.log("Élève trouvé :", option.textContent);
+            selectEleve.appendChild(option.cloneNode(true));
+        }
+        if(rechercheEleve.value.trim() !== ""){
+            selectEleve.selectedIndex = 1;
+            selectEleve.dispatchEvent(new Event("change"));
+        }else{
+            nomEleve.value = "";
+            prenomEleve.value = "";
+            sexeEleve.value = "";
+            adresseEleve.value = "";
+            dateNaissance.value = "";
         }
        }
+      
     });
 </script>
 <?php include_once('../includes/footer.php'); ?>
