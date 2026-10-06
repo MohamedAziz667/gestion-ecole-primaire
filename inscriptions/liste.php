@@ -3,6 +3,55 @@
     include_once('../includes/header.php');
     include_once('../includes/navbar.php');
     include_once('../includes/sidebar.php');
+    include_once('../configuration/connexion.php');
+
+    $rqtClasse = "SELECT Id_classe, nom_classe
+              FROM CLASSE
+              ORDER BY nom_classe;";
+
+    $stmtClasse = $connexion->prepare($rqtClasse);
+    $stmtClasse->execute();
+    $listeClasse = $stmtClasse->fetchAll(PDO::FETCH_ASSOC);
+
+    $rqtAnnee = "SELECT Id_anneeScolaire, annee
+              FROM ANNEE_SCOLAIRE
+              ORDER BY annee;";
+
+    $stmtAnnee = $connexion->prepare($rqtAnnee);
+    $stmtAnnee->execute();
+    $listeAnnee = $stmtAnnee->fetchAll(PDO::FETCH_ASSOC);
+
+    $recherche = $_GET['recherche'] ?? "";
+    $classe = $_GET['classe'] ?? "";
+    $annee = $_GET['annee'] ?? "";
+    $conditions = [];
+    $parametre = [];
+    if ($recherche !== "") {
+        $conditions[] = "(E.nom_eleve LIKE ? OR E.prenom_eleve LIKE ? OR E.matricule LIKE ?)";
+        $parametre[] = "%" . $recherche . "%";
+        $parametre[] = "%" . $recherche . "%";
+        $parametre[] = "%" . $recherche . "%";
+    }
+    if($classe !== ""){
+        $conditions[] = "C.nom_classe = ?";
+        $parametre[] = $classe;
+    }
+    if($annee !== ""){
+        $conditions[] = "A.annee = ?";
+        $parametre[] = $annee;
+    }
+    $rqtFiltre = "SELECT E.nom_eleve, E.prenom_eleve, E.matricule, C.nom_classe, A.annee, I.statut
+                    FROM INSCRIPTION I
+                    JOIN ELEVE E ON I.fk_id_eleve = E.Id_eleve
+                    JOIN CLASSE C ON I.fk_id_classe = C.Id_classe
+                    JOIN ANNEE_SCOLAIRE A ON I.fk_id_anneeScolaire = A.Id_anneeScolaire";
+    if(!empty($conditions)){
+        $rqtFiltre .= " WHERE " . implode(" AND ", $conditions);
+    }
+    $rqtFiltre .= ";";
+    $stmtFiltre = $connexion->prepare($rqtFiltre);
+    $stmtFiltre->execute($parametre);
+    $listeInscription = $stmtFiltre->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="container-fluid px-4">
@@ -64,87 +113,61 @@
 
 
             <!-- Filtres -->
+            <form method="GET">
+                <div class="row mb-4">
 
-            <div class="row mb-4">
+                    <div class="col-md-4">
+                        <input
+                            type="text"
+                            name="recherche"
+                            class="form-control"
+                            placeholder="Rechercher un élève..."
+                            value="<?= $recherche; ?>"
+                        >
+                    </div>
 
+                    <div class="col-md-3">
+                        <select name="classe" class="form-select">
 
-                <div class="col-md-4">
+                            <option value="">Toutes les classes</option>
 
-                    <input
-                        type="text"
-                        class="form-control"
-                        placeholder="Rechercher un élève..."
-                    >
+                            <?php foreach($listeClasse as $classeItem): ?>
+                                <option
+                                    value="<?= $classeItem['nom_classe']; ?>"
+                                    <?= $classe === $classeItem['nom_classe'] ? 'selected' : ''; ?>
+                                >
+                                    <?= $classeItem['nom_classe']; ?>
+                                </option>
+                            <?php endforeach; ?>
 
-                </div>
+                        </select>
+                    </div>
 
+                    <div class="col-md-3">
+                        <select name="annee" class="form-select">
+                            <option value="">Toutes les années</option>
+                        <?php foreach($listeAnnee as $anneeItems): ?>
+                            <option value="<?= $anneeItems['annee']; ?>"
+                                <?= $annee === $anneeItems['annee'] ? 'selected' : ''; ?>
+                            >
+                                <?= $anneeItems['annee']; ?>
+                            </option>
+                        <?php endforeach; ?>
+                        </select>
+                    </div>
 
-
-                <div class="col-md-3">
-
-                    <select class="form-select">
-
-                        <option>
-                            Toutes les classes
-                        </option>
-
-                        <option>
-                            CI
-                        </option>
-
-                        <option>
-                            CP
-                        </option>
-
-                        <option>
-                            CE1
-                        </option>
-
-                        <option>
-                            CE2
-                        </option>
-
-                        <option>
-                            CM1
-                        </option>
-
-                        <option>
-                            CM2
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-
-                <div class="col-md-3">
-
-                    <select class="form-select">
-
-                        <option>
-                            Année scolaire
-                        </option>
-
-                        <option>
-                            2025-2026
-                        </option>
-
-                        <option>
-                            2026-2027
-                        </option>
-
-                    </select>
+                    <div class="col-md-2">
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                        >
+                            <i class="fas fa-search me-1"></i>
+                            Rechercher
+                        </button>
+                    </div>
 
                 </div>
-
-
-            </div>
-
-
-
-
-
+            </form>
 
             <!-- Tableau -->
 
@@ -175,52 +198,15 @@
                     </thead>
 
 
-
-
-
                     <tbody>
-
-
-
-                        <tr>
-
-
-                            <td>
-                                1
-                            </td>
-
-
-                            <td>
-                                Diallo
-                            </td>
-
-
-                            <td>
-                                Moussa
-                            </td>
-
-
-                            <td>
-                                CM1
-                            </td>
-
-
-                            <td>
-                                2025-2026
-                            </td>
-
-
-                            <td>
-
-                                <span class="badge bg-success">
-
-                                    Admis
-
-                                </span>
-
-                            </td>
-
-
+                        <?php foreach($listeInscription as $inscription): ?>
+                            <tr>
+                                <td><?= $inscription["matricule"] ?></td>
+                                <td><?= $inscription["nom_eleve"]; ?></td>
+                                <td><?= $inscription["prenom_eleve"]; ?></td>
+                                <td><?= $inscription["nom_classe"]; ?></td>
+                                <td><?= $inscription["annee"]; ?></td>
+                                <td><?= $inscription["statut"]; ?></td>
 
                             <td class="text-center">
 
@@ -251,85 +237,9 @@
 
 
                             </td>
-
-
+                            
                         </tr>
-
-                        <tr>
-
-
-                            <td>
-                                2
-                            </td>
-
-
-                            <td>
-                                Sow
-                            </td>
-
-
-                            <td>
-                                Aminata
-                            </td>
-
-
-                            <td>
-                                CE2
-                            </td>
-
-
-                            <td>
-                                2025-2026
-                            </td>
-
-
-                            <td>
-
-                                <span class="badge bg-danger">
-
-                                    Ajourné
-
-                                </span>
-
-                            </td>
-
-
-
-                            <td class="text-center">
-
-
-                                <a
-                                    href="#"
-                                    class="btn btn-warning btn-sm"
-                                >
-
-                                    <i class="fas fa-edit"></i>
-
-                                    Modifier
-
-                                </a>
-
-
-
-                                <a
-                                    href="#"
-                                    class="btn btn-danger btn-sm"
-                                >
-
-                                    <i class="fas fa-trash"></i>
-
-                                    Supprimer
-
-                                </a>
-
-
-                            </td>
-
-
-                        </tr>
-
-
-
+                        <?php endforeach; ?>
 
                     </tbody>
 

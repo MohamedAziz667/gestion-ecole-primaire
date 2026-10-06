@@ -6,7 +6,7 @@
     include_once('../configuration/connexion.php');
     $message = $_SESSION['message'] ?? null;
     unset($_SESSION['message']);
-    $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, C.nom_classe, A.annee
+    $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, E.nom_tuteur, E.telephone_tuteur, C.nom_classe, A.annee
                     FROM inscription I
                     JOIN (
                         SELECT fk_id_eleve, MAX(fk_id_anneeScolaire) AS derniere_annee
@@ -23,13 +23,11 @@
     $stmtEleve = $connexion->prepare($rqtEleve);
     $stmtEleve->execute();
     $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
-    // var_dump($liste_eleve);
 
     $rqtClasse = "SELECT * FROM CLASSE;";
     $stmtClasse = $connexion->prepare($rqtClasse);
     $stmtClasse->execute();
     $liste_classe = $stmtClasse->fetchAll();
-    // var_dump($liste_classe);
 
     $rqtAnnee = "SELECT * FROM ANNEE_SCOLAIRE;";
     $stmtAnnee = $connexion->prepare($rqtAnnee);
@@ -198,6 +196,8 @@
                         data-sexe="<?= $eleve['sexe_eleve']; ?>"
                         data-adresse="<?= $eleve['adresse_eleve']; ?>"
                         data-date_naissance="<?= $eleve['date_naissance']; ?>"
+                        data-nom_tuteur="<?= $eleve['nom_tuteur']; ?>"
+                        data-telephone_tuteur="<?= $eleve['telephone_tuteur'] ?>"
                     >
 
                         <?= $eleve['nom_eleve'] . " " . $eleve['prenom_eleve'] . " - " . $eleve['nom_classe'] . " - " . $eleve['annee']; ?>
@@ -304,6 +304,39 @@
                     type="text"
                     class="form-control"
                     name="adresse_eleve"
+                >
+
+            </div>
+
+            <!-- Informations du tuteur -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Nom et prénom du parent/tuteur
+                </label>
+
+                <input
+                    id="nom_tuteur"
+                    type="text"
+                    class="form-control"
+                    name="nom_tuteur"
+                    placeholder="Ex : Abdoulaye Touré"
+                >
+
+            </div>
+
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Téléphone du parent/tuteur
+                </label>
+
+                <input
+                    id="telephone_tuteur"
+                    type="text"
+                    class="form-control"
+                    name="telephone_tuteur"
+                    placeholder="Ex : 77 123 45 67"
                 >
 
             </div>
@@ -432,19 +465,21 @@
 
     const selectEleve = document.getElementById("selectEleve");
     const optionsOriginales = Array.from(selectEleve.options).slice(1);
-    console.log("Options originales :", optionsOriginales.length);
+    // console.log("Options originales :", optionsOriginales.length);
     const nomEleve = document.getElementById("nomEleve")
     const prenomEleve = document.getElementById("prenomEleve")
     const sexeEleve = document.getElementById("sexeEleve");
     const adresseEleve = document.getElementById("adresseEleve");
     const dateNaissance = document.getElementById("dateNaissance");
+    const nom_tuteur = document.getElementById("nom_tuteur");
+    const telephone_tuteur = document.getElementById("telephone_tuteur");
 
     const rechercheEleve = document.getElementById("rechercheEleve");
 
     const formInscription = document.getElementById("formInscription");
     
     formInscription.addEventListener("submit", function(event){
-        console.log("SUBMIT");
+        // console.log("SUBMIT");
         const fk_id_anneeScolaire = document.getElementById("fk_id_anneeScolaire");
         const fk_id_classe = document.getElementById("fk_id_classe");
         const nomEleve = document.getElementById("nomEleve").value.trim();
@@ -517,6 +552,8 @@
         sexeEleve.value = "";
         adresseEleve.value = "";
         dateNaissance.value = "";
+        nom_tuteur.value = "";
+        telephone_tuteur.value = "";
         selectEleve.value = "";
 
         nomEleve.readOnly = false;
@@ -539,7 +576,9 @@
         adresseEleve.readOnly = true;
         dateNaissance.value = eleveSelectionne.dataset.date_naissance;
         dateNaissance.readOnly = true;
-        console.log("Élève changé");
+        nom_tuteur.value = eleveSelectionne.dataset.nom_tuteur;
+        telephone_tuteur.value = eleveSelectionne.dataset.telephone_tuteur;
+        // console.log("Élève changé");
     });
 
     rechercheEleve.addEventListener("input", function(){

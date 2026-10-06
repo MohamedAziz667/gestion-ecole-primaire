@@ -6,6 +6,8 @@
         $typeInscription = $_POST['type_inscription'];
         $fk_id_classe = $_POST['fk_id_classe'];
         $fk_id_anneeScolaire = $_POST['fk_id_anneeScolaire'];
+        $nom_tuteur = $_POST['nom_tuteur'];
+        $telephone_tuteur = $_POST['telephone_tuteur'];
 
         $rqtVerifClasse = "SELECT Id_classe
                             FROM CLASSE
@@ -42,12 +44,17 @@
             }else{
                 $connexion->beginTransaction();
                 try {
-                    $rqtInsertionInscription = "INSERT INTO ELEVE (nom_eleve, prenom_eleve, sexe_eleve, adresse_eleve, date_naissance)
-                                    VALUES (?, ?, ?, ?, ?);";
+                    $rqtInsertionInscription = "INSERT INTO ELEVE (nom_eleve, prenom_eleve, sexe_eleve, adresse_eleve, date_naissance, nom_tuteur, telephone_tuteur)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?);";
                 $stmtInsertionInscription = $connexion->prepare($rqtInsertionInscription);
-                $stmtInsertionInscription->execute([$nom_eleve, $prenom_eleve, $sexe_eleve, $adresse_eleve, $date_naissance]);
+                $stmtInsertionInscription->execute([$nom_eleve, $prenom_eleve, $sexe_eleve, $adresse_eleve, $date_naissance, $nom_tuteur, $telephone_tuteur]);
     
                 $fk_id_eleve = $connexion->lastInsertId();
+                $rqtMatricule = "UPDATE ELEVE
+                SET matricule = CONCAT('ANA-', LPAD(Id_eleve, 6, '0'))
+                WHERE Id_eleve = ?;";
+                $stmtMatricule = $connexion->prepare($rqtMatricule);
+                $stmtMatricule->execute([$fk_id_eleve]);
                 $rqtInscription = "INSERT INTO INSCRIPTION (fk_id_eleve, fk_id_classe, fk_id_anneeScolaire)
                                     VALUES (?, ?, ?);";
                 $stmtInscription = $connexion->prepare($rqtInscription);
@@ -81,16 +88,29 @@
             $stmtVerification->execute([$fk_id_eleve, $fk_id_anneeScolaire]);
             $listeVerification = $stmtVerification->fetch();
             
-            
-            if($listeVerification == false){
-                $rqtInscription = "INSERT INTO INSCRIPTION (fk_id_eleve, fk_id_classe, fk_id_anneeScolaire)
-                                    VALUES (?, ?, ?);";
-                $stmtInscription = $connexion->prepare($rqtInscription);
-                $stmtInscription->execute([$fk_id_eleve, $fk_id_classe, $fk_id_anneeScolaire]);
-                $_SESSION['message'] = "Inscription enregistrée avec succès.";
+
+                if($listeVerification == false){
+                    $connexion->beginTransaction();
+                    try {
+                        $rqtUpdateEleve = "UPDATE ELEVE
+                                            SET nom_tuteur = ?, telephone_tuteur = ?
+                                            WHERE Id_eleve = ?;";
+                        $stmtUpdateEleve = $connexion->prepare($rqtUpdateEleve);
+                        $stmtUpdateEleve->execute([$nom_tuteur, $telephone_tuteur, $fk_id_eleve]);
+                        $rqtInscription = "INSERT INTO INSCRIPTION (fk_id_eleve, fk_id_classe, fk_id_anneeScolaire)
+                                            VALUES (?, ?, ?);";
+                        $stmtInscription = $connexion->prepare($rqtInscription);
+                        $stmtInscription->execute([$fk_id_eleve, $fk_id_classe, $fk_id_anneeScolaire]);
+                        $connexion->commit();
+                        $_SESSION['message'] = "Inscription enregistrée avec succès.";
+                    } catch (PDOException $e) {
+                        $connexion->rollBack();
+                        $_SESSION['message'] = "Une erreur est survenue lors de l'inscription.";
+                    }
             }else{
                 $_SESSION['message'] = "Cet élève est déjà inscrit pour cette année scolaire.";
             }
+            
         }
             header("Location: ../inscriptions/ajouter.php");
             exit();
