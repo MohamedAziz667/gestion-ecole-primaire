@@ -5,6 +5,8 @@
     include_once('../includes/sidebar.php');
     include_once('../configuration/connexion.php');
 
+    $nombreEleve = 1;
+
     $rqtClasse = "SELECT Id_classe, nom_classe
               FROM CLASSE
               ORDER BY nom_classe;";
@@ -181,12 +183,12 @@
 
 
                         <tr>
-
                             <th>#</th>
-                            <th>Nom élève</th>
                             <th>Prénom</th>
+                            <th>Nom</th>
                             <th>Classe</th>
                             <th>Année scolaire</th>
+                            <th>Matricule</th>
                             <th>Statut</th>
                             <th class="text-center">
                                 Actions
@@ -201,11 +203,12 @@
                     <tbody>
                         <?php foreach($listeInscription as $inscription): ?>
                             <tr>
-                                <td><?= $inscription["matricule"] ?></td>
-                                <td><?= $inscription["nom_eleve"]; ?></td>
+                                <td><?= $nombreEleve++; ?></td>
                                 <td><?= $inscription["prenom_eleve"]; ?></td>
+                                <td><?= $inscription["nom_eleve"]; ?></td>
                                 <td><?= $inscription["nom_classe"]; ?></td>
                                 <td><?= $inscription["annee"]; ?></td>
+                                <td><?= $inscription["matricule"] ?></td>
                                 <td><?= $inscription["statut"]; ?></td>
 
                             <td class="text-center">

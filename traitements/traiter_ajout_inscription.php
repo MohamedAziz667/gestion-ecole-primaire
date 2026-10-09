@@ -39,15 +39,16 @@
             $sexe_eleve = $_POST['sexe_eleve'];
             $adresse_eleve = $_POST['adresse_eleve'];
             $date_naissance = $_POST['date_naissance'];
-            if (empty($nom_eleve) || mb_strlen($nom_eleve) < 2 || empty($prenom_eleve) || mb_strlen($prenom_eleve) < 2 || empty($sexe_eleve) || empty($adresse_eleve) || mb_strlen($adresse_eleve) < 2 || empty($date_naissance)) {
+            $lieu_naissance = $_POST['lieu_naissance'];
+            if (empty($nom_eleve) || mb_strlen($nom_eleve) < 2 || empty($prenom_eleve) || mb_strlen($prenom_eleve) < 2 || empty($sexe_eleve) || empty($adresse_eleve) || mb_strlen($adresse_eleve) < 2 || empty($date_naissance) || empty($lieu_naissance) || mb_strlen($lieu_naissance) < 2) {
                 $_SESSION['message'] = "Les informations saisies sont invalides.";
             }else{
                 $connexion->beginTransaction();
                 try {
-                    $rqtInsertionInscription = "INSERT INTO ELEVE (nom_eleve, prenom_eleve, sexe_eleve, adresse_eleve, date_naissance, nom_tuteur, telephone_tuteur)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?);";
+                    $rqtInsertionInscription = "INSERT INTO ELEVE (nom_eleve, prenom_eleve, sexe_eleve, adresse_eleve, date_naissance, lieu_naissance, nom_tuteur, telephone_tuteur)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
                 $stmtInsertionInscription = $connexion->prepare($rqtInsertionInscription);
-                $stmtInsertionInscription->execute([$nom_eleve, $prenom_eleve, $sexe_eleve, $adresse_eleve, $date_naissance, $nom_tuteur, $telephone_tuteur]);
+                $stmtInsertionInscription->execute([$nom_eleve, $prenom_eleve, $sexe_eleve, $adresse_eleve, $date_naissance, $lieu_naissance, $nom_tuteur, $telephone_tuteur]);
     
                 $fk_id_eleve = $connexion->lastInsertId();
                 $rqtMatricule = "UPDATE ELEVE

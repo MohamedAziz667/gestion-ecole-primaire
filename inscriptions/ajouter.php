@@ -6,7 +6,7 @@
     include_once('../configuration/connexion.php');
     $message = $_SESSION['message'] ?? null;
     unset($_SESSION['message']);
-    $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, E.nom_tuteur, E.telephone_tuteur, C.nom_classe, A.annee
+    $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, E.lieu_naissance, E.nom_tuteur, E.telephone_tuteur, C.nom_classe, A.annee
                     FROM inscription I
                     JOIN (
                         SELECT fk_id_eleve, MAX(fk_id_anneeScolaire) AS derniere_annee
@@ -196,6 +196,7 @@
                         data-sexe="<?= $eleve['sexe_eleve']; ?>"
                         data-adresse="<?= $eleve['adresse_eleve']; ?>"
                         data-date_naissance="<?= $eleve['date_naissance']; ?>"
+                        data-lieu_naissance="<?= $eleve['lieu_naissance']; ?>"
                         data-nom_tuteur="<?= $eleve['nom_tuteur']; ?>"
                         data-telephone_tuteur="<?= $eleve['telephone_tuteur'] ?>"
                     >
@@ -290,6 +291,21 @@
                     name="date_naissance"
                 >
 
+            </div>
+
+            <!-- Lieu de naissance -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">
+                    Lieu de naissance
+                </label>
+
+                <input
+                    id="lieuNaissance"
+                    type="text"
+                    class="form-control"
+                    name="lieu_naissance"
+                    required
+                >
             </div>
 
             <!-- Adresse -->
@@ -471,6 +487,7 @@
     const sexeEleve = document.getElementById("sexeEleve");
     const adresseEleve = document.getElementById("adresseEleve");
     const dateNaissance = document.getElementById("dateNaissance");
+    const lieuNaissance = document.getElementById("lieuNaissance");
     const nom_tuteur = document.getElementById("nom_tuteur");
     const telephone_tuteur = document.getElementById("telephone_tuteur");
 
@@ -487,15 +504,16 @@
         const sexeEleve = document.getElementById("sexeEleve").value.trim();
         const adresseEleve = document.getElementById("adresseEleve").value.trim();
         const dateNaissance = document.getElementById("dateNaissance").value.trim();
+        const lieuNaissance = document.getElementById("lieuNaissance").value.trim();
         let erreur = false;
         if (ancien.checked) {
-            console.log("Élève déjà enregistré");
+            // console.log("Élève déjà enregistré");
             if (selectEleve.value === "") {
                 erreur = true;
                 alert("Veuillez sélectionner un élève.");
             }
         } else if (nouveau.checked) {
-            console.log("Nouvel élève");
+            // console.log("Nouvel élève");
             if (nomEleve === "") {
                 erreur = true;
                 alert("Le champ nom est obligatoire.");
@@ -525,6 +543,13 @@
                 erreur = true;
                 alert("Le champ date naissance est obligatoire.");
             }
+            if (lieuNaissance === "") {
+                erreur = true;
+                alert("Le champ Lieu Naissance est obligatoire.");
+            }else if(lieuNaissance.length < 2){
+                erreur = true;
+                alert("Le lieu de naissance doit contenir au moins 2 caractères.");
+            }
         }
         if (fk_id_classe.value === "") {
                 erreur = true;
@@ -552,6 +577,7 @@
         sexeEleve.value = "";
         adresseEleve.value = "";
         dateNaissance.value = "";
+        lieuNaissance.value = "";
         nom_tuteur.value = "";
         telephone_tuteur.value = "";
         selectEleve.value = "";
@@ -561,6 +587,7 @@
         sexeEleve.disabled = false;
         adresseEleve.readOnly = false;
         dateNaissance.readOnly = false;
+        lieuNaissance.readOnly = false;
     });
 
     selectEleve.addEventListener("change", function(){
@@ -576,6 +603,8 @@
         adresseEleve.readOnly = true;
         dateNaissance.value = eleveSelectionne.dataset.date_naissance;
         dateNaissance.readOnly = true;
+        lieuNaissance.value = eleveSelectionne.dataset.lieu_naissance;
+        lieuNaissance.readOnly = true;
         nom_tuteur.value = eleveSelectionne.dataset.nom_tuteur;
         telephone_tuteur.value = eleveSelectionne.dataset.telephone_tuteur;
         // console.log("Élève changé");
