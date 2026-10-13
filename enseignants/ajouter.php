@@ -6,6 +6,7 @@
 
     $message = $_SESSION['message'] ?? null;
     unset($_SESSION['message']);
+
     $ancien_formulaire = $_SESSION['ancien_formulaire'] ?? [];
     unset($_SESSION['ancien_formulaire']);
 
@@ -38,7 +39,8 @@
     </ol>
     <?php if($message): ?>
         <div class="alert alert-<?= $type_message; ?>"> 
-        <?= $message; ?></div>
+        <?= htmlspecialchars($message ?? '', ENT_QUOTES, 'UTF-8'); ?>
+    </div>
     <?php endif; ?>
     <div class="card shadow-sm">
 
@@ -59,28 +61,6 @@
 
                 <div class="row">
 
-                    <!-- Nom -->
-                    <div class="col-md-6 mb-3">
-
-                        <label
-                            for="nomEnseignant"
-                            class="form-label"
-                        >
-                            Nom
-                        </label>
-
-                        <input
-                                value="<?= $ancien_formulaire['nom_enseignant'] ?? ''; ?>"
-                            id="nomEnseignant"
-                            type="text"
-                            class="form-control"
-                            name="nom_enseignant"
-                            placeholder="Nom de l'enseignant"
-                            required
-                        >
-
-                    </div>
-
                     <!-- Prénom -->
                     <div class="col-md-6 mb-3">
 
@@ -92,12 +72,34 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['prenom_enseignant'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['prenom_enseignant'] ?? ''); ?>"
                             id="prenomEnseignant"
                             type="text"
                             class="form-control"
                             name="prenom_enseignant"
                             placeholder="Prénom de l'enseignant"
+                            required
+                        >
+
+                    </div>
+
+                    <!-- Nom -->
+                    <div class="col-md-6 mb-3">
+
+                        <label
+                            for="nomEnseignant"
+                            class="form-label"
+                        >
+                            Nom
+                        </label>
+
+                        <input
+                            value="<?= htmlspecialchars($ancien_formulaire['nom_enseignant'] ?? ''); ?>"
+                            id="nomEnseignant"
+                            type="text"
+                            class="form-control"
+                            name="nom_enseignant"
+                            placeholder="Nom de l'enseignant"
                             required
                         >
 
@@ -118,7 +120,7 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['matricule'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['matricule'] ?? ''); ?>"
                             id="matricule"
                             type="text"
                             class="form-control"
@@ -140,7 +142,7 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['email'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['email'] ?? ''); ?>"
                             id="email"
                             type="email"
                             class="form-control"
@@ -150,8 +152,9 @@
                         >
 
                     </div>
+                    </div>
 
-                                    <div class="row">
+                    <div class="row">
 
                     <div class="col-md-6 mb-3">
                         <label for="dateNaissance" class="form-label">
@@ -159,11 +162,12 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['date_naissance'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['date_naissance'] ?? ''); ?>"
                             id="dateNaissance"
                             type="date"
                             class="form-control"
                             name="date_naissance"
+                            required
                         >
                     </div>
 
@@ -173,12 +177,13 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['lieu_naissance'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['lieu_naissance'] ?? ''); ?>"
                             id="lieuNaissance"
                             type="text"
                             class="form-control"
                             name="lieu_naissance"
                             placeholder="Ex : Dakar"
+                            required
                         >
                     </div>
 
@@ -192,12 +197,13 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['grade'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['grade'] ?? ''); ?>"
                             id="grade"
                             type="text"
                             class="form-control"
                             name="grade"
                             placeholder="Ex : IP/3"
+                            required
                         >
                     </div>
 
@@ -207,17 +213,80 @@
                         </label>
 
                         <input
-                            value="<?= $ancien_formulaire['telephone'] ?? ''; ?>"
+                            value="<?= htmlspecialchars($ancien_formulaire['telephone'] ?? ''); ?>"
                             id="telephone"
                             type="tel"
                             class="form-control"
                             name="telephone"
                             placeholder="Ex : 77 123 45 67"
+                            required
                         >
                     </div>
 
                 </div>
 
+                
+            <div class="row">
+
+                <!-- Fonction -->
+                <div class="col-md-6 mb-3">
+                    <label for="fonction" class="form-label">
+                        Fonction
+                    </label>
+
+                    <select
+                        id="fonction"
+                        class="form-select"
+                        name="fonction"
+                    >
+                        <option value="">Non renseignée</option>
+
+                        <option
+                            value="adjoint"
+                            <?= htmlspecialchars(($ancien_formulaire['fonction'] ?? '') === 'adjoint' ? 'selected' : ''); ?>
+                        >
+                            Adjoint
+                        </option>
+
+                        <option
+                            value="direction"
+                            <?= htmlspecialchars(($ancien_formulaire['fonction'] ?? '') === 'direction' ? 'selected' : ''); ?>
+                        >
+                            Direction
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Statut -->
+                    <div class="col-md-6 mb-3">
+                        <label for="statut" class="form-label">
+                            Statut
+                        </label>
+
+                        <select
+                            id="statut"
+                            class="form-select"
+                            name="statut"
+                        >
+                            <option value="">Non renseigné</option>
+
+                            <option
+                                value="actif"
+                                <?= htmlspecialchars(($ancien_formulaire['statut'] ?? '') === 'actif' ? 'selected' : ''); ?>
+                            >
+                                Actif
+                            </option>
+
+                            <option
+                                value="inactif"
+                                <?= htmlspecialchars(($ancien_formulaire['statut'] ?? '') === 'inactif' ? 'selected' : ''); ?>
+                            >
+                                Inactif
+                            </option>
+                        </select>
+                    </div>
+
+                </div>
                 <hr>
 
                 <div class="d-flex justify-content-end">
@@ -229,14 +298,6 @@
                         <i class="fas fa-arrow-left me-1"></i>
                         Retour
                     </a>
-
-                    <button
-                        type="reset"
-                        class="btn btn-warning me-2"
-                    >
-                        <i class="fas fa-rotate-left me-1"></i>
-                        Réinitialiser
-                    </button>
 
                     <button
                         type="submit"

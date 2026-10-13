@@ -15,7 +15,7 @@
     unset($_SESSION['type_message']);
 
     $id = $_GET['id'];
-    $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone
+    $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone, E.fonction, E.statut
                         FROM ENSEIGNANT E
                         WHERE E.ID_enseignant = ?;";
     $stmtEnseignant = $connexion->prepare($rqtEnseignant);
@@ -26,10 +26,6 @@
     if ($enseignant === false) {
         echo "Enseignant introuvable";
         exit();
-    }else{
-        // $rqtModifier = "UPDATE ENSEIGNANT SET nom_enseignant = ?, prenom_enseignant = ?, matricule = ?, email = ? WHERE E.ID_enseignant = ?;";
-        // $stmtModifier = $connexion->prepare($rqtModifier);
-        // $stmtModifier->execute([]);
     }
 ?>
 
@@ -170,8 +166,69 @@
                         required
                     >
                 </div>
-
             </div>
+
+            <div class="row">
+
+                <!-- Fonction -->
+                <div class="col-md-6 mb-3">
+                    <label for="fonction" class="form-label">
+                        Fonction
+                    </label>
+
+                    <select
+                        id="fonction"
+                        class="form-select"
+                        name="fonction"
+                    >
+                        <option value="">Non renseignée</option>
+
+                        <option
+                            value="adjoint"
+                            <?= (($ancien_formulaire['fonction'] ?? $enseignant['fonction'] ?? null) === 'adjoint') ? 'selected' : ''; ?>
+                        >
+                            Adjoint
+                        </option>
+
+                        <option
+                            value="direction"
+                            <?= (($ancien_formulaire['fonction'] ?? $enseignant['fonction'] ?? null) === 'direction') ? 'selected' : ''; ?>
+                        >
+                            Direction
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Statut -->
+                    <div class="col-md-6 mb-3">
+                        <label for="statut" class="form-label">
+                            Statut
+                        </label>
+
+                        <select
+                            id="statut"
+                            class="form-select"
+                            name="statut"
+                        >
+                            <option value="">Non renseigné</option>
+
+                            <option
+                                value="actif"
+                                <?= (($ancien_formulaire['statut'] ?? $enseignant['statut'] ?? null) === 'actif') ? 'selected' : ''; ?>
+                            >
+                                Actif
+                            </option>
+
+                            <option
+                                value="inactif"
+                                <?= (($ancien_formulaire['statut'] ?? $enseignant['statut'] ?? null) === 'inactif') ? 'selected' : ''; ?>
+                            >
+                                Inactif
+                            </option>
+                        </select>
+                    </div>
+
+                </div>
 
                 <div class="row">
 

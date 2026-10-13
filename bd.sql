@@ -74,3 +74,25 @@ CREATE TABLE EVALUATION(
 	FOREIGN KEY (fk_id_matiere) REFERENCES MATIERE(ID_matiere),
 	FOREIGN KEY (fk_id_composition) REFERENCES COMPOSITION(ID_composition)
 );
+
+CREATE TABLE AFFECTATION_ENSEIGNANT (
+    id_affectation INT AUTO_INCREMENT PRIMARY KEY,
+    fk_id_enseignant INT NOT NULL,
+    fk_id_classe INT NOT NULL,
+    fk_id_anneeScolaire INT NOT NULL,
+
+    CONSTRAINT fk_affectation_enseignant
+        FOREIGN KEY (fk_id_enseignant)
+        REFERENCES ENSEIGNANT(ID_enseignant),
+
+    CONSTRAINT fk_affectation_classe
+        FOREIGN KEY (fk_id_classe)
+        REFERENCES CLASSE(Id_classe),
+
+    CONSTRAINT fk_affectation_annee
+        FOREIGN KEY (fk_id_anneeScolaire)
+        REFERENCES ANNEE_SCOLAIRE(Id_anneeScolaire),
+
+    CONSTRAINT uq_classe_annee
+        UNIQUE (fk_id_classe, fk_id_anneeScolaire)
+);

@@ -13,7 +13,7 @@
 
     $nombreEnseignant = 1;
 
-    $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone
+    $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone, E.fonction, E.statut
                         FROM ENSEIGNANT E;";
     $stmtEnseignant = $connexion->prepare($rqtEnseignant);
     $stmtEnseignant->execute();
@@ -101,14 +101,16 @@
                         <tr>
 
                             <th>#</th>
-                            <th>Nom</th>
                             <th>Prénom</th>
+                            <th>Nom</th>
                             <th>Matricule</th>
-                            <th>Email</th>
+                            <th>Grade</th>
+                            <th>Fontion</th>
                             <th>Date de naissance</th>
                             <th>Lieu de naissance</th>
-                            <th>Grade</th>
                             <th>Téléphone</th>
+                            <th>Email</th>
+                            <th>Statut</th>
                             <th class="text-center">
                                 Actions
                             </th>
@@ -123,7 +125,7 @@
                     <tbody>
                     <?php if(empty($listeEnseignant)): ?>
                         <tr>
-                            <td colspan="6" class="text-center">Aucun enseignant enregistré</td>
+                            <td colspan="12" class="text-center">Aucun enseignant enregistré</td>
                         </tr>
                     <?php else: ?>
 
@@ -135,11 +137,11 @@
                             </td>
 
                             <td>
-                                <?= htmlspecialchars($enseignant['nom_enseignant']); ?>
+                                <?= htmlspecialchars($enseignant['prenom_enseignant']); ?>
                             </td>
 
                             <td>
-                                <?= htmlspecialchars($enseignant['prenom_enseignant']); ?>
+                                <?= htmlspecialchars($enseignant['nom_enseignant']); ?>
                             </td>
 
                             <td>
@@ -147,19 +149,30 @@
                             </td>
 
                             <td>
-                                <?= htmlspecialchars($enseignant['email']); ?>
+                                <?= htmlspecialchars($enseignant['grade']); ?>
                             </td>
+
+                            <td>
+                                <?= $enseignant['fonction'] === 'adjoint' ? 'Adjoint' : ($enseignant['fonction'] === 'direction' ? 'Direction' : 'Non renseignée'); ?>
+                            </td>
+
                             <td>
                                 <?= htmlspecialchars($enseignant['date_naissance']); ?>
                             </td>
                             <td>
                                 <?= htmlspecialchars($enseignant['lieu_naissance']); ?>
                             </td>
-                            <td>
-                                <?= htmlspecialchars($enseignant['grade']); ?>
-                            </td>
+                            
                             <td>
                                 <?= htmlspecialchars($enseignant['telephone']); ?>
+                            </td>
+
+                            <td>
+                                <?= htmlspecialchars($enseignant['email']); ?>
+                            </td>
+                            
+                             <td>
+                                <?= $enseignant['statut'] === 'actif' ? 'Actif' : ($enseignant['statut'] === ('inactif') ? 'Inactif' : 'Non renseigné'); ?>
                             </td>
 
                             <td class="text-center">
@@ -176,21 +189,45 @@
 
                                 </a>
 
+                    <?php if($enseignant['statut'] === "actif"): ?>
+                        <form
+                            action="/Gestion_Ecole_Primaire/traitements/traiter_statut_enseignant.php"
+                            method="POST"
+                            class="d-inline"
+                        >
 
+                            <input type="hidden" name="action" value="desactiver">
 
-                                <a
-                                    href="#"
-                                    class="btn btn-danger btn-sm"
-                                >
+                            <input type="hidden" name="id_enseignant" value="<?= $enseignant['ID_enseignant'] ?>">
 
-                                    <i class="fas fa-trash"></i>
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-user-slash"></i>
+                                Désactiver
+                            </button>
 
-                                    Supprimer
+                        </form>
+                    <?php else: ?>
+                        <!-- Formulaire d'activation -->
+                        <form
+                            action="/Gestion_Ecole_Primaire/traitements/traiter_statut_enseignant.php"
+                            method="POST"
+                            class="d-inline"
+                        >
 
-                                </a>
+                            <input type="hidden" name="action" value="activer">
 
+                            <input type="hidden" name="id_enseignant" value="<?= $enseignant['ID_enseignant'] ?>">
 
-                            </td>
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-user-check"></i>
+                                Activer
+                            </button>
+
+                        </form>
+                    <?php endif; ?>
+
+                    </td>
+                            
 
 
                         </tr>
