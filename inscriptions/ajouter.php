@@ -6,6 +6,13 @@
     include_once('../configuration/connexion.php');
     $message = $_SESSION['message'] ?? null;
     unset($_SESSION['message']);
+
+    $ancien_formulaire = $_SESSION['ancien_formulaire'] ?? [];
+    unset($_SESSION['ancien_formulaire']);
+
+    $type_message = $_SESSION['type_message'] ?? '';
+    unset($_SESSION['type_message']);
+
     $rqtEleve = "SELECT I.fk_id_eleve, E.nom_eleve, E.prenom_eleve, E.sexe_eleve, E.adresse_eleve, E.date_naissance, E.lieu_naissance, E.nom_tuteur, E.telephone_tuteur, C.nom_classe, A.annee
                     FROM inscription I
                     JOIN (
@@ -59,7 +66,7 @@
     </ol>
 
     <?php if($message): ?>
-        <div class="alert alert-info"> 
+        <div class="alert alert-<?= $type_message; ?>"> 
         <?= $message; ?> </div> 
     <?php endif; ?>
 
@@ -90,7 +97,7 @@
                         name="type_inscription"
                         id="ancien"
                         value="ancien"
-                        checked
+                        <?= (($ancien_formulaire['type_inscription'] ?? 'ancien') === 'ancien') ? 'checked' : ''; ?>
                     >
 
                     <label
@@ -114,6 +121,7 @@
                         name="type_inscription"
                         id="nouveau"
                         value="nouveau"
+                        <?= (($ancien_formulaire['type_inscription'] ?? '') === 'nouveau') ? 'checked' : ''; ?>
                     >
 
                     <label
@@ -130,7 +138,6 @@
             </div>
 
         </div>
-
 
 
 
@@ -190,19 +197,18 @@
                 <?php foreach($liste_eleve as $eleve): ?>
 
                     <option
-                        value="<?= $eleve['fk_id_eleve']; ?>"
-                        data-nom="<?= $eleve['nom_eleve']; ?>"
-                        data-prenom="<?= $eleve['prenom_eleve']; ?>"
-                        data-sexe="<?= $eleve['sexe_eleve']; ?>"
-                        data-adresse="<?= $eleve['adresse_eleve']; ?>"
-                        data-date_naissance="<?= $eleve['date_naissance']; ?>"
-                        data-lieu_naissance="<?= $eleve['lieu_naissance']; ?>"
-                        data-nom_tuteur="<?= $eleve['nom_tuteur']; ?>"
-                        data-telephone_tuteur="<?= $eleve['telephone_tuteur'] ?>"
+                        value="<?= htmlspecialchars((string)$eleve['fk_id_eleve']); ?>"
+                        data-nom="<?= htmlspecialchars($eleve['nom_eleve'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-prenom="<?= htmlspecialchars($eleve['prenom_eleve'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-sexe="<?= htmlspecialchars($eleve['sexe_eleve'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-adresse="<?= htmlspecialchars($eleve['adresse_eleve'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-date_naissance="<?= htmlspecialchars($eleve['date_naissance'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-lieu_naissance="<?= htmlspecialchars($eleve['lieu_naissance'], ENT_QUOTES, 'UTF-8'); ?>"
+                        data-nom_tuteur="<?= htmlspecialchars($eleve['nom_tuteur'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                        data-telephone_tuteur="<?= htmlspecialchars($eleve['telephone_tuteur'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                        <?= (string)($ancien_formulaire['fk_id_eleve'] ?? '') === (string)$eleve['fk_id_eleve'] ? 'selected' : ''; ?>
                     >
-
-                        <?= $eleve['nom_eleve'] . " " . $eleve['prenom_eleve'] . " - " . $eleve['nom_classe'] . " - " . $eleve['annee']; ?>
-
+                        <?= htmlspecialchars($eleve['nom_eleve'] . ' ' . $eleve['prenom_eleve'] . ' - ' . $eleve['nom_classe'] . ' - ' . $eleve['annee'], ENT_QUOTES, 'UTF-8'); ?>
                     </option>
 
                 <?php endforeach; ?>
@@ -224,6 +230,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['nom_eleve'] ?? ''); ?>"
                     id="nomEleve"
                     type="text"
                     class="form-control"
@@ -240,6 +247,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['prenom_eleve'] ?? ''); ?>"
                     id="prenomEleve"
                     type="text"
                     class="form-control"
@@ -256,6 +264,7 @@
                 </label>
 
                 <select
+                    value="<?= htmlspecialchars($ancien_formulaire['sexe_eleve'] ?? ''); ?>"
                     id="sexeEleve"
                     class="form-select"
                     name="sexe_eleve"
@@ -265,11 +274,13 @@
                         Choisir
                     </option>
 
-                    <option value="M">
+                    <option value="M"
+                            <?= (($ancien_formulaire['sexe_eleve'] ?? '') === 'M') ? 'selected' : ''; ?>>
                         Masculin
                     </option>
 
-                    <option value="F">
+                    <option value="F"
+                            <?= (($ancien_formulaire['sexe_eleve'] ?? '') === 'F') ? 'selected' : ''; ?>>
                         Féminin
                     </option>
 
@@ -285,6 +296,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['date_naissance'] ?? ''); ?>"
                     id="dateNaissance"
                     type="date"
                     class="form-control"
@@ -300,6 +312,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['lieu_naissance'] ?? ''); ?>"
                     id="lieuNaissance"
                     type="text"
                     class="form-control"
@@ -316,6 +329,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['adresse_eleve'] ?? ''); ?>"
                     id="adresseEleve"
                     type="text"
                     class="form-control"
@@ -332,6 +346,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['nom_tuteur'] ?? ''); ?>"
                     id="nom_tuteur"
                     type="text"
                     class="form-control"
@@ -348,6 +363,7 @@
                 </label>
 
                 <input
+                    value="<?= htmlspecialchars($ancien_formulaire['telephone_tuteur'] ?? ''); ?>"
                     id="telephone_tuteur"
                     type="text"
                     class="form-control"
@@ -400,8 +416,9 @@
                                 Choisir une classe
                             </option>
                             <?php foreach($liste_classe as $classe): ?>
-                                <option value="<?= $classe['Id_classe']; ?>">
-                                    <?= $classe['nom_classe']; ?>
+                                <option value="<?= $classe['Id_classe']; ?>"
+                                    <?= (string)($ancien_formulaire['fk_id_classe'] ?? '') === (string)$classe['Id_classe'] ? 'selected' : '' ; ?>>
+                                    <?= htmlspecialchars($classe['nom_classe']); ?>
                                 </option>
                             <?php endforeach; ?>
 
@@ -429,8 +446,9 @@
                             </option>
 
                             <?php foreach($liste_annee as $annee): ?>
-                                <option value="<?= $annee['Id_anneeScolaire']; ?>">
-                                    <?= $annee['annee']; ?>
+                                <option value="<?= $annee['Id_anneeScolaire']; ?>"
+                                    <?= (string)($annee['Id_anneeScolaire']) === (string)($ancien_formulaire['fk_id_anneeScolaire'] ?? '') ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($annee['annee']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -495,74 +513,6 @@
 
     const formInscription = document.getElementById("formInscription");
     
-    formInscription.addEventListener("submit", function(event){
-        // console.log("SUBMIT");
-        const fk_id_anneeScolaire = document.getElementById("fk_id_anneeScolaire");
-        const fk_id_classe = document.getElementById("fk_id_classe");
-        const nomEleve = document.getElementById("nomEleve").value.trim();
-        const prenomEleve = document.getElementById("prenomEleve").value.trim();
-        const sexeEleve = document.getElementById("sexeEleve").value.trim();
-        const adresseEleve = document.getElementById("adresseEleve").value.trim();
-        const dateNaissance = document.getElementById("dateNaissance").value.trim();
-        const lieuNaissance = document.getElementById("lieuNaissance").value.trim();
-        let erreur = false;
-        if (ancien.checked) {
-            // console.log("Élève déjà enregistré");
-            if (selectEleve.value === "") {
-                erreur = true;
-                alert("Veuillez sélectionner un élève.");
-            }
-        } else if (nouveau.checked) {
-            // console.log("Nouvel élève");
-            if (nomEleve === "") {
-                erreur = true;
-                alert("Le champ nom est obligatoire.");
-            }else if(nomEleve.length < 2){
-                erreur = true;
-                alert("Le nom doit contenir au moins 2 caractères.");
-            }
-            if (prenomEleve === "") {
-                erreur = true;
-                alert("Le champ prenom est obligatoire.");
-            }else if(prenomEleve.length < 2){
-                erreur = true;
-                alert("Le prénom doit contenir au moins 2 caractères.");
-            }
-            if (sexeEleve === "") {
-                erreur = true;
-                alert("Le champ sexe est obligatoire.");
-            }
-            if (adresseEleve === "") {
-                erreur = true;
-                alert("Le champ adresse est obligatoire.");
-            }else if(adresseEleve.length < 2){
-                erreur = true;
-                alert("L'adresse doit contenir au moins 2 caractères.");
-            }
-            if (dateNaissance === "") {
-                erreur = true;
-                alert("Le champ date naissance est obligatoire.");
-            }
-            if (lieuNaissance === "") {
-                erreur = true;
-                alert("Le champ Lieu Naissance est obligatoire.");
-            }else if(lieuNaissance.length < 2){
-                erreur = true;
-                alert("Le lieu de naissance doit contenir au moins 2 caractères.");
-            }
-        }
-        if (fk_id_classe.value === "") {
-                erreur = true;
-                alert("Le champ classe est obligatoire.");
-            }
-            if (fk_id_anneeScolaire.value === "") {
-                erreur = true;
-                alert("Le champ année est obligatoire.");
-            }
-        if (erreur === true) {
-            event.preventDefault();
-        }
-    });
 
     ancien.addEventListener("change", function(){
         zoneInformationsEleve.style.display = "";
@@ -591,8 +541,11 @@
     });
 
     selectEleve.addEventListener("change", function(){
-        console.log(selectEleve.value);
+    
         const eleveSelectionne = selectEleve.options[selectEleve.selectedIndex];
+        if (!selectEleve.value) {
+            return;
+        }
         nomEleve.value = eleveSelectionne.dataset.nom;
         nomEleve.readOnly = true;
         prenomEleve.value = eleveSelectionne.dataset.prenom;
@@ -609,6 +562,10 @@
         telephone_tuteur.value = eleveSelectionne.dataset.telephone_tuteur;
         // console.log("Élève changé");
     });
+
+    if (ancien.checked && selectEleve.value !== "") {
+        remplirInformationsEleve();
+    }
 
     rechercheEleve.addEventListener("input", function(){
         console.log("Recherche :", rechercheEleve.value);
