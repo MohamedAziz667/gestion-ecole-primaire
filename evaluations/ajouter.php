@@ -6,7 +6,7 @@
     include_once('../configuration/connexion.php');
 
     function charger_eleves($connexion, $classe, $annee){
-        $rqtEleve = "SELECT E.Id_eleve, E.nom_eleve, E.prenom_eleve, C.nom_classe
+        $rqtEleve = "SELECT E.Id_eleve, E.nom_eleve, E.prenom_eleve, E.matricule, C.nom_classe
                              FROM eleve E
                              JOIN inscription I ON E.Id_eleve = I.fk_id_eleve
                              JOIN classe C ON I.fk_id_classe = C.Id_classe
@@ -391,6 +391,10 @@
                                     Prénom
                                 </th>
 
+                                <th>
+                                    Matricule
+                                </th>
+
                                 <th width="170">
                                     Note /20
                                 </th>
@@ -416,6 +420,10 @@
 
                                     <td>
                                         <?= $eleve["prenom_eleve"]; ?>
+                                    </td>
+
+                                    <td>
+                                        <?= $eleve["matricule"]; ?>
                                     </td>
 
                                     <td>
