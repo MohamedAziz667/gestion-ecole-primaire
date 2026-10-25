@@ -31,21 +31,22 @@
     include_once('../includes/navbar.php');
     include_once('../includes/sidebar.php');
 
-    $rqtClasse = "SELECT C.nom_classe, E.nom_enseignant, E.prenom_enseignant
+    $rqtClasse = "SELECT C.nom_classe, E.nom_enseignant, E.prenom_enseignant, C.fk_id_anneeScolaire, A.annee
                     FROM CLASSE C
                     LEFT JOIN ENSEIGNANT E ON C.fk_id_enseignant = E.ID_enseignant
+                    INNER JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_anneeScolaire
                     WHERE C.Id_classe = ?;";
     $stmtClasse = $connexion->prepare($rqtClasse);
     $stmtClasse->execute([$id]);
     $classe = $stmtClasse->fetch();
 
-    $rqtAnnee = "SELECT Id_anneeScolaire, annee
-                FROM ANNEE_SCOLAIRE
-                ORDER BY annee DESC
-                LIMIT 1;";
-    $stmtAnnee = $connexion->prepare($rqtAnnee);
-    $stmtAnnee->execute();
-    $annee = $stmtAnnee->fetch();
+    // $rqtAnnee = "SELECT Id_anneeScolaire, annee
+    //             FROM ANNEE_SCOLAIRE
+    //             ORDER BY annee DESC
+    //             LIMIT 1;";
+    // $stmtAnnee = $connexion->prepare($rqtAnnee);
+    // $stmtAnnee->execute();
+    // $annee = $stmtAnnee->fetch();
 
     $rqtEffectif = "SELECT
                 COUNT(*) AS effectif_total, SUM(CASE WHEN E.sexe_eleve = 'M' THEN 1 ELSE 0 END) AS nb_garcons,
@@ -56,19 +57,17 @@
             AND I.fk_id_anneeScolaire = ?;";
 
     $stmtEffectif = $connexion->prepare($rqtEffectif);
-    $stmtEffectif->execute([$id, $annee['Id_anneeScolaire']]);
+    $stmtEffectif->execute([$id, $classe['fk_id_anneeScolaire']]);
     $effectif = $stmtEffectif->fetch(PDO::FETCH_ASSOC);
 
     $rqtEleve = "SELECT E.ID_eleve, E.nom_eleve, E.prenom_eleve, E.matricule, E.sexe_eleve, E.date_naissance, E.lieu_naissance, E.adresse_eleve, E.nom_tuteur, E.telephone_tuteur
                 FROM INSCRIPTION I
                 JOIN ELEVE E ON E.Id_eleve = I.fk_id_eleve
-                JOIN CLASSE C ON C.Id_classe = I.fk_id_classe
-                JOIN ANNEE_SCOLAIRE A ON A.Id_anneeScolaire = I.fk_id_anneeScolaire
                 WHERE I.fk_id_classe = ?
                 AND I.fk_id_anneeScolaire = ?
                 ORDER BY E.nom_eleve ASC, E.prenom_eleve ASC;";
     $stmtEleve = $connexion->prepare($rqtEleve);
-    $stmtEleve->execute([$id, $annee['Id_anneeScolaire']]);
+    $stmtEleve->execute([$id, $classe['fk_id_anneeScolaire']]);
     $listeEleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
     $nbEleve = 1;
 
@@ -112,7 +111,7 @@
 
                 <div class="col-md-3">
                     <div class="text-muted small mb-1">ANNÉE SCOLAIRE</div>
-                    <h5 class="mb-0"><?= $annee['annee']; ?></h5>
+                    <h5 class="mb-0"><?= htmlspecialchars($classe['annee']); ?></h5>
                 </div>
 
             </div>
@@ -145,7 +144,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="small mb-2">GARÇONS</div>
-                            <h2 class="fw-bold mb-0"><?= $effectif['nb_garcons']; ?></h2>
+                            <h2 class="fw-bold mb-0"><?= $effectif['nb_garcons'] ?? '0'; ?></h2>
                             <div class="small mt-1">Élèves de sexe masculin</div>
                         </div>
                         <div class="fs-1">
@@ -162,7 +161,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="small mb-2">FILLES</div>
-                            <h2 class="fw-bold mb-0"><?= $effectif['nb_filles']; ?></h2>
+                            <h2 class="fw-bold mb-0"><?= $effectif['nb_filles'] ?? '0'; ?></h2>
                             <div class="small mt-1">Élèves de sexe féminin</div>
                         </div>
                         <div class="fs-1">
@@ -175,42 +174,29 @@
 
     </div>
 
-    <!-- Choix de l'année et exportation -->
+    <!-- Exportation et impression -->
     <div class="card shadow-sm mb-4 no-print">
         <div class="card-body">
-            <div class="row align-items-end">
+            <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
 
-                <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
-                    <label for="anneeScolaire" class="form-label fw-semibold">
-                        Année scolaire
-                    </label>
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    onclick="window.print()"
+                >
+                    <i class="fas fa-print me-1"></i>
+                    Imprimer / PDF
+                </button>
 
-                    <select class="form-select" id="anneeScolaire">
-                        <option value="1">2025-2026</option>
-                        <option value="2" selected>2026-2027</option>
-                    </select>
-                </div>
-
-                <div class="col-lg-8 text-lg-end">
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary me-1 mb-1"
-                        onclick="window.print()"
-                    >
-                        <i class="fas fa-print me-1"></i>
-                        Imprimer / PDF
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-success mb-1"
-                        disabled
-                        title="Export Excel à développer"
-                    >
-                        <i class="fas fa-file-excel me-1"></i>
-                        Exporter Excel
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    class="btn btn-outline-success"
+                    disabled
+                    title="Export Excel à développer"
+                >
+                    <i class="fas fa-file-excel me-1"></i>
+                    Exporter Excel
+                </button>
 
             </div>
         </div>

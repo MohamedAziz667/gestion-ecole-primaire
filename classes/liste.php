@@ -11,24 +11,72 @@
     $type_message = $_SESSION['type_message'] ?? '';
     unset($_SESSION['type_message']);
 
+
+    $rqtAnnee = "SELECT Id_anneeScolaire, annee, statut
+                FROM ANNEE_SCOLAIRE
+                WHERE statut <> 'preparation'
+                ORDER BY annee DESC;";
+    $stmtAnnee = $connexion->prepare($rqtAnnee);
+    $stmtAnnee->execute();
+    $listeAnnee = $stmtAnnee->fetchAll(PDO::FETCH_ASSOC);
+
+    $rqtAnneeActive = "SELECT Id_anneeScolaire, annee
+                FROM ANNEE_SCOLAIRE
+                WHERE statut = 'active';";
+    $stmtAnneeActive = $connexion->prepare($rqtAnneeActive);
+    $stmtAnneeActive->execute();
+    $anneeActive = $stmtAnneeActive->fetch(PDO::FETCH_ASSOC);
+
+    $anneeSelectionnee = $_GET['annee'] ?? '';
+    $anneeActiveDisponible = true;
+    $anneeVerif = false;
+    if ($anneeActive !== false) {
+        if ($anneeSelectionnee === '') {
+            $anneeSelectionnee = $anneeActive['Id_anneeScolaire'];
+        }
+        if (filter_var($anneeSelectionnee, FILTER_VALIDATE_INT) && $anneeSelectionnee > 0) {
+            $rqtVerifAnnee = "SELECT Id_anneeScolaire
+                            FROM ANNEE_SCOLAIRE
+                            WHERE (statut = 'cloturee' OR statut = 'active') AND Id_anneeScolaire = ?;";
+            $stmtVerifAnnee = $connexion->prepare($rqtVerifAnnee);
+            $stmtVerifAnnee->execute([$anneeSelectionnee]);
+            $anneeVerif = $stmtVerifAnnee->fetch(PDO::FETCH_ASSOC);
+        }
+        if ($anneeVerif === false) {
+            $anneeSelectionnee = $anneeActive['Id_anneeScolaire'];
+        }else{
+            $anneeSelectionnee = $anneeVerif['Id_anneeScolaire'];
+        }
+    }else{
+        $anneeActiveDisponible = false;
+    }
+
     $rqtClasseEnseignant = "SELECT C.Id_classe, C.nom_classe, E.nom_enseignant, E.prenom_enseignant
                             FROM classe C
                             LEFT JOIN enseignant E ON C.fk_id_enseignant = E.ID_enseignant
+                            INNER JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_anneeScolaire
+                            WHERE A.Id_anneeScolaire = ?
                             ORDER BY C.nom_classe ASC;";
     $stmtClasseEnseignant = $connexion->prepare($rqtClasseEnseignant);
-    $stmtClasseEnseignant->execute();
+    $stmtClasseEnseignant->execute([$anneeSelectionnee]);
     $listeClasseEnseignant = $stmtClasseEnseignant->fetchAll(PDO::FETCH_ASSOC);
 
     $rqtNbEleveInscrit = "SELECT COUNT(I.fk_id_eleve) AS nb_eleve, C.Id_classe
                             FROM CLASSE C
-                            LEFT JOIN INSCRIPTION I ON C.Id_classe = I.fk_id_classe AND I.fk_id_anneeScolaire = (SELECT Id_anneeScolaire
-                                                                                                                FROM ANNEE_SCOLAIRE
-                                                                                                                ORDER BY annee DESC
-                                                                                                                LIMIT 1)
+                            LEFT JOIN INSCRIPTION I ON C.Id_classe = I.fk_id_classe AND I.fk_id_anneeScolaire = ?
+                            WHERE C.fk_id_anneeScolaire = ?
                             GROUP BY C.Id_classe;";
     $stmtNbEleveInscrit = $connexion->prepare($rqtNbEleveInscrit);
-    $stmtNbEleveInscrit->execute();
+    $stmtNbEleveInscrit->execute([$anneeSelectionnee, $anneeSelectionnee]);
     $listeNbEleveInscrit = $stmtNbEleveInscrit->fetchAll(PDO::FETCH_ASSOC);
+
+    $anneeSelectionneeInfo = null;
+    foreach ($listeAnnee as $annee) {
+        if ($annee['Id_anneeScolaire'] == $anneeSelectionnee) {
+            $anneeSelectionneeInfo = $annee;
+            break;
+        }
+    }
 ?>
 
 <div class="container-fluid px-4">
@@ -50,36 +98,52 @@
         </div>
     <?php endif; ?>
 
+    <?php if($anneeActiveDisponible === true): ?>
     <div class="card mb-4">
  
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
 
             <div>
                 <i class="fas fa-school me-2"></i>
                 Liste des classes
             </div>
+            
+           <form method="GET" class="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mb-0">
+                        <label for="annee" class="form-label">
+                            Année scolaire
+                        </label>
 
-            <a href="/Gestion_Ecole_Primaire/classes/ajouter.php"
-               class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i>
-                Ajouter une classe
-            </a>
+                        <select
+                            name="annee" id="annee" class="form-select" onchange="this.form.submit()">
+                            <?php foreach($listeAnnee as $annee): ?>
+                                <option value="<?= $annee['Id_anneeScolaire'] ?>"
+                                <?= $annee['Id_anneeScolaire'] == $anneeSelectionnee ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($annee['annee']); ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+
+                        <?php if ($anneeSelectionneeInfo !== null): ?>
+                            <?php if ($anneeSelectionneeInfo['statut'] === 'active'): ?>
+                                <span class="badge bg-success">Année active</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Année clôturée</span>
+                            <?php endif; ?>
+                        <?php endif; ?>
+            </form>
+
+            <?php if ($anneeSelectionneeInfo !== null && $anneeSelectionneeInfo['statut'] === 'active'): ?>
+                <a href="/Gestion_Ecole_Primaire/classes/ajouter.php"
+                class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    Ajouter une classe
+                </a>
+            <?php endif; ?>
 
         </div>
 
         <div class="card-body">
-
-            <div class="row mb-3">
-
-                <div class="col-md-4">
-                    <input
-                        type="text"
-                        class="form-control"
-                        placeholder="Rechercher une classe..."
-                    >
-                </div>
-
-            </div>
 
             <div class="table-responsive">
 
@@ -135,21 +199,31 @@
                                     Voir
                                 </a>
 
-                                <a
-                                    href="#"
-                                    class="btn btn-warning btn-sm"
-                                >
-                                    <i class="fas fa-edit"></i>
-                                    Modifier
-                                </a>
+                                <?php if ($anneeSelectionneeInfo !== null && $anneeSelectionneeInfo['statut'] === 'active'): ?>
+                                    <a
+                                        href="modifier.php?id=<?= $classeEnseignant['Id_classe']; ?>"
+                                        class="btn btn-warning btn-sm"
+                                    >
+                                        <i class="fas fa-edit"></i>
+                                        Modifier
+                                    </a>
 
-                                <a
-                                    href="#"
-                                    class="btn btn-danger btn-sm"
-                                >
-                                    <i class="fas fa-trash"></i>
-                                    Supprimer
-                                </a>
+                                    <form method="POST" action="supprimer.php" class="d-inline">
+                                        <input
+                                            type="hidden"
+                                            name="id"
+                                            value="<?= $classeEnseignant['Id_classe']; ?>"
+                                        >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Voulez-vous vraiment supprimer cette classe ?');"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                            Supprimer
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
 
                             </td>
 
@@ -166,6 +240,7 @@
         </div>
 
     </div>
+    <?php endif; ?>
 
 </div>
 <?php include_once('../includes/footer.php'); ?>
