@@ -12,7 +12,7 @@
     }else{
         $rqtEleve = "SELECT E.nom_eleve, E.prenom_eleve, E.matricule, E.sexe_eleve, E.date_naissance, E.lieu_naissance, E.adresse_eleve, E.nom_tuteur, E.telephone_tuteur
                     FROM ELEVE E
-                    WHERE E.ID_eleve = ?;";
+                    WHERE E.Id_eleve = ?;";
         $stmtEleve = $connexion->prepare($rqtEleve);
         $stmtEleve->execute([$id]);
         $eleve = $stmtEleve->fetch(PDO::FETCH_ASSOC);

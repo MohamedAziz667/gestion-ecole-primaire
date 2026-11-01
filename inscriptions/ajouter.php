@@ -31,15 +31,21 @@
     $stmtEleve->execute();
     $liste_eleve = $stmtEleve->fetchAll(PDO::FETCH_ASSOC);
 
-    $rqtClasse = "SELECT * FROM CLASSE;";
+    $rqtClasse = "SELECT C.Id_classe, C.nom_classe, A.annee
+                FROM CLASSE C
+                JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_anneeScolaire
+                WHERE A.statut = 'active';";
     $stmtClasse = $connexion->prepare($rqtClasse);
     $stmtClasse->execute();
     $liste_classe = $stmtClasse->fetchAll();
 
-    $rqtAnnee = "SELECT * FROM ANNEE_SCOLAIRE;";
+    $rqtAnnee = "SELECT annee
+                FROM ANNEE_SCOLAIRE
+                WHERE statut = 'active';";
     $stmtAnnee = $connexion->prepare($rqtAnnee);
     $stmtAnnee->execute();
-    $liste_annee = $stmtAnnee->fetchAll();
+    $anneeActive = $stmtAnnee->fetchColumn();
+
 ?>
 <div class="container-fluid px-4">
 
@@ -222,22 +228,6 @@
         <!-- Informations de l'élève -->
         <div class="row" id="zoneInformationsEleve">
 
-            <!-- Nom -->
-            <div class="col-md-6 mb-3">
-
-                <label class="form-label">
-                    Nom
-                </label>
-
-                <input
-                    value="<?= htmlspecialchars($ancien_formulaire['nom_eleve'] ?? ''); ?>"
-                    id="nomEleve"
-                    type="text"
-                    class="form-control"
-                    name="nom_eleve"
-                >
-
-            </div>
 
             <!-- Prénom -->
             <div class="col-md-6 mb-3">
@@ -252,6 +242,23 @@
                     type="text"
                     class="form-control"
                     name="prenom_eleve"
+                >
+
+            </div>
+
+            <!-- Nom -->
+            <div class="col-md-6 mb-3">
+
+                <label class="form-label">
+                    Nom
+                </label>
+
+                <input
+                    value="<?= htmlspecialchars($ancien_formulaire['nom_eleve'] ?? ''); ?>"
+                    id="nomEleve"
+                    type="text"
+                    class="form-control"
+                    name="nom_eleve"
                 >
 
             </div>
@@ -395,6 +402,33 @@
 
             <div class="card-body">
 
+            <?php if ($anneeActive !== false): ?>
+                <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
+                    <div class="me-3">
+                        <i class="fas fa-calendar-alt fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading mb-1">Année scolaire en cours</h6>
+                        <h5 class="mb-1 fw-bold">
+                            <?= htmlspecialchars($anneeActive); ?>
+                        </h5>
+                        <small>
+                            Cette inscription sera automatiquement rattachée à l'année scolaire active.
+                        </small>
+                    </div>
+                </div>
+
+            <?php else: ?>
+
+                <div class="alert alert-warning mb-4" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Aucune année scolaire active.</strong>
+                    Il est actuellement impossible d'enregistrer une inscription.
+                    Veuillez d'abord activer une année scolaire.
+                </div>
+
+            <?php endif; ?>
+
                 <div class="row">
 
                     <div class="col-md-4 mb-3">
@@ -426,35 +460,6 @@
 
                     </div>
 
-                    <div class="col-md-4 mb-3">
-
-                        <label class="form-label">
-
-                            Année scolaire
-
-                        </label>
-
-                        <select
-                            class="form-select"
-                            name="fk_id_anneeScolaire"
-                            id="fk_id_anneeScolaire"
-                            required
-                        >
-
-                            <option value="">
-                                Choisir une année
-                            </option>
-
-                            <?php foreach($liste_annee as $annee): ?>
-                                <option value="<?= $annee['Id_anneeScolaire']; ?>"
-                                    <?= (string)($annee['Id_anneeScolaire']) === (string)($ancien_formulaire['fk_id_anneeScolaire'] ?? '') ? 'selected' : ''; ?>>
-                                    <?= htmlspecialchars($annee['annee']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-
-                    </div>
-
 
                 </div>
 
@@ -475,6 +480,7 @@
                     type="submit"
                     class="btn btn-primary"
                     name="enregistrer_inscription"
+                    <?= $anneeActive === false ? 'disabled' : ''; ?>
                 >
 
                     <i class="fas fa-save me-1"></i>

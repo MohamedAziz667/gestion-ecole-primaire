@@ -11,6 +11,7 @@ require_once('../configuration/connexion.php');
 | Le traitement ne doit être exécuté que si le bouton
 | "enregistrer_inscription" a été envoyé.
 */
+
 if (isset($_POST['enregistrer_inscription'])) {
 
     /*
@@ -23,13 +24,45 @@ if (isset($_POST['enregistrer_inscription'])) {
     $fk_id_eleve = trim($_POST['fk_id_eleve'] ?? '');
     $type_inscription = trim($_POST['type_inscription'] ?? '');
     $fk_id_classe = trim($_POST['fk_id_classe'] ?? '');
-    $fk_id_anneeScolaire = trim($_POST['fk_id_anneeScolaire'] ?? '');
     $nom_tuteur = trim($_POST['nom_tuteur'] ?? '');
+    $nom_tuteur = mb_convert_case($nom_tuteur, MB_CASE_TITLE, 'UTF-8');
     $telephone_tuteur = trim($_POST['telephone_tuteur'] ?? '');
+
+    
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Vérifier la classe et son année scolaire active
+    |--------------------------------------------------------------------------
+    | Cette vérification est commune aux deux types d'inscription.
+    */
+    if ($fk_id_classe === '') {
+
+        $_SESSION['message'] = "Veuillez choisir une classe.";
+        $_SESSION['type_message'] = 'danger';
+
+        header('Location: ../inscriptions/ajouter.php');
+        exit();
+    }
+
+    $rqtAnneeClasse = "SELECT fk_id_anneeScolaire
+                FROM CLASSE C
+                JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_anneeScolaire
+                WHERE C.Id_classe = ? AND A.statut = 'active';";
+    $stmtAnneeClasse = $connexion->prepare($rqtAnneeClasse);
+    $stmtAnneeClasse->execute([$fk_id_classe]);
+    $anneeClasse = $stmtAnneeClasse->fetch(PDO::FETCH_ASSOC);
+    if ($anneeClasse !== false) {
+        $fk_id_anneeScolaire = $anneeClasse['fk_id_anneeScolaire'];
+    }else{
+        $_SESSION['message'] = "La classe sélectionnée n'existe pas ou n'est pas associée à une année scolaire active.";
+        $_SESSION['type_message'] = "danger";
+        header("Location: ../inscriptions/ajouter.php");
+        exit();
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | 3. Préparer les données à conserver dans la session
+    | 4. Préparer les données à conserver dans la session
     |--------------------------------------------------------------------------
     | Si une erreur survient, le formulaire sera réaffiché après
     | une redirection. La session permettra de retrouver les valeurs.
@@ -38,11 +71,15 @@ if (isset($_POST['enregistrer_inscription'])) {
 
         // Récupérer les informations personnelles du nouvel élève.
         $nom_eleve = trim($_POST['nom_eleve'] ?? '');
+        $nom_eleve = mb_convert_case($nom_eleve, MB_CASE_TITLE, 'UTF-8');
         $prenom_eleve = trim($_POST['prenom_eleve'] ?? '');
+        $prenom_eleve = mb_convert_case($prenom_eleve, MB_CASE_TITLE, 'UTF-8');
         $sexe_eleve = trim($_POST['sexe_eleve'] ?? '');
         $adresse_eleve = trim($_POST['adresse_eleve'] ?? '');
+        $adresse_eleve = mb_convert_case($adresse_eleve, MB_CASE_TITLE, 'UTF-8');
         $date_naissance = trim($_POST['date_naissance'] ?? '');
         $lieu_naissance = trim($_POST['lieu_naissance'] ?? '');
+        $lieu_naissance = mb_convert_case($lieu_naissance, MB_CASE_TITLE, 'UTF-8');
 
         // Regrouper toutes les valeurs dans un tableau associatif.
         $ancien_tableau = [
@@ -55,7 +92,6 @@ if (isset($_POST['enregistrer_inscription'])) {
             'nom_tuteur' => $nom_tuteur,
             'telephone_tuteur' => $telephone_tuteur,
             'fk_id_classe' => $fk_id_classe,
-            'fk_id_anneeScolaire' => $fk_id_anneeScolaire,
             'type_inscription' => $type_inscription
         ];
 
@@ -70,7 +106,6 @@ if (isset($_POST['enregistrer_inscription'])) {
             'fk_id_eleve' => $fk_id_eleve,
             'type_inscription' => $type_inscription,
             'fk_id_classe' => $fk_id_classe,
-            'fk_id_anneeScolaire' => $fk_id_anneeScolaire,
             'nom_tuteur' => $nom_tuteur,
             'telephone_tuteur' => $telephone_tuteur
         ];
@@ -87,73 +122,7 @@ if (isset($_POST['enregistrer_inscription'])) {
 
     /*
     |--------------------------------------------------------------------------
-    | 4. Vérifier que la classe existe
-    |--------------------------------------------------------------------------
-    | Cette vérification est commune aux deux types d'inscription.
-    */
-    if ($fk_id_classe === '') {
-
-        $_SESSION['message'] = "Veuillez choisir une classe.";
-        $_SESSION['type_message'] = 'danger';
-
-        header('Location: ../inscriptions/ajouter.php');
-        exit();
-    }
-
-    $rqtVerifClasse = "SELECT Id_classe
-                       FROM CLASSE
-                       WHERE Id_classe = ?";
-
-    $stmtVerifClasse = $connexion->prepare($rqtVerifClasse);
-    $stmtVerifClasse->execute([$fk_id_classe]);
-
-    $listeClasse = $stmtVerifClasse->fetch();
-
-    if ($listeClasse === false) {
-
-        $_SESSION['message'] = "La classe sélectionnée n'existe pas.";
-        $_SESSION['type_message'] = 'danger';
-
-        header('Location: ../inscriptions/ajouter.php');
-        exit();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | 5. Vérifier que l'année scolaire existe
-    |--------------------------------------------------------------------------
-    | Cette vérification est également commune aux deux types.
-    */
-    if ($fk_id_anneeScolaire === '') {
-
-        $_SESSION['message'] = "Veuillez choisir une année scolaire.";
-        $_SESSION['type_message'] = 'danger';
-
-        header('Location: ../inscriptions/ajouter.php');
-        exit();
-    }
-
-    $rqtVerifAnnee = "SELECT Id_anneeScolaire
-                      FROM ANNEE_SCOLAIRE
-                      WHERE Id_anneeScolaire = ?";
-
-    $stmtVerifAnnee = $connexion->prepare($rqtVerifAnnee);
-    $stmtVerifAnnee->execute([$fk_id_anneeScolaire]);
-
-    $listeAnnee = $stmtVerifAnnee->fetch();
-
-    if ($listeAnnee === false) {
-
-        $_SESSION['message'] = "L'année scolaire sélectionnée n'existe pas.";
-        $_SESSION['type_message'] = 'danger';
-
-        header('Location: ../inscriptions/ajouter.php');
-        exit();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | 6. TRAITEMENT D'UN NOUVEL ÉLÈVE
+    | 5. TRAITEMENT D'UN NOUVEL ÉLÈVE
     |--------------------------------------------------------------------------
     | Nous validons les informations personnelles avant de commencer
     | une transaction et d'insérer des données dans la base.
@@ -277,7 +246,7 @@ if (isset($_POST['enregistrer_inscription'])) {
 
     /*
     |--------------------------------------------------------------------------
-    | 7. TRAITEMENT D'UN ANCIEN ÉLÈVE
+    | 6. TRAITEMENT D'UN ANCIEN ÉLÈVE
     |--------------------------------------------------------------------------
     | L'élève existe déjà dans ELEVE : nous vérifions son identifiant,
     | puis nous contrôlons qu'il n'est pas déjà inscrit pour cette année.

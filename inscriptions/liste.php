@@ -5,10 +5,17 @@
     include_once('../includes/sidebar.php');
     include_once('../configuration/connexion.php');
 
+    $message = $_SESSION['message'] ?? null;
+    unset($_SESSION['message']);
+
+    $type_message = $_SESSION['type_message'] ?? '';
+    unset($_SESSION['type_message']);
+    
     $nombreEleve = 1;
 
-    $rqtClasse = "SELECT Id_classe, nom_classe
-              FROM CLASSE
+    $rqtClasse = "SELECT C.Id_classe, C.nom_classe
+              FROM CLASSE C
+              JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_AnneeScolaire
               ORDER BY nom_classe;";
 
     $stmtClasse = $connexion->prepare($rqtClasse);
@@ -35,14 +42,14 @@
         $parametre[] = "%" . $recherche . "%";
     }
     if($classe !== ""){
-        $conditions[] = "C.nom_classe = ?";
+        $conditions[] = "C.Id_classe = ?";
         $parametre[] = $classe;
     }
     if($annee !== ""){
         $conditions[] = "A.annee = ?";
         $parametre[] = $annee;
     }
-    $rqtFiltre = "SELECT E.nom_eleve, E.prenom_eleve, E.matricule, C.nom_classe, A.annee, I.statut
+    $rqtFiltre = "SELECT E.nom_eleve, E.prenom_eleve, E.matricule, C.nom_classe, A.annee, I.statut, I.fk_id_eleve, I.fk_id_classe, I.fk_id_anneeScolaire
                     FROM INSCRIPTION I
                     JOIN ELEVE E ON I.fk_id_eleve = E.Id_eleve
                     JOIN CLASSE C ON I.fk_id_classe = C.Id_classe
@@ -50,6 +57,17 @@
     if(!empty($conditions)){
         $rqtFiltre .= " WHERE " . implode(" AND ", $conditions);
     }
+    $rqtFiltre .= " ORDER BY (A.statut = 'active') DESC, A.annee DESC,
+                    FIELD(C.nom_classe,
+                    'CI', 'CIA', 'CIB',
+                    'CP', 'CPA', 'CPB',
+                    'CE1', 'CE1A', 'CE1B',
+                    'CE2', 'CE2A', 'CE2B',
+                    'CM1', 'CM1A', 'CM1B',
+                    'CM2', 'CM2A', 'CM2B'
+                ),
+                    E.nom_eleve ASC,
+                    E.prenom_eleve ASC";
     $rqtFiltre .= ";";
     $stmtFiltre = $connexion->prepare($rqtFiltre);
     $stmtFiltre->execute($parametre);
@@ -74,7 +92,10 @@
 
     </ol>
 
-
+    <?php if($message): ?>
+        <div class="alert alert-<?= $type_message; ?>"> 
+        <?= $message; ?> </div> 
+    <?php endif; ?>
 
     <div class="card mb-4">
 
@@ -135,8 +156,8 @@
 
                             <?php foreach($listeClasse as $classeItem): ?>
                                 <option
-                                    value="<?= $classeItem['nom_classe']; ?>"
-                                    <?= $classe === $classeItem['nom_classe'] ? 'selected' : ''; ?>
+                                    value="<?= $classeItem['Id_classe']; ?>"
+                                    <?= (string)$classe === (string)$classeItem['Id_classe'] ? 'selected' : ''; ?>
                                 >
                                     <?= $classeItem['nom_classe']; ?>
                                 </option>
@@ -213,32 +234,18 @@
 
                             <td class="text-center">
 
-
-                                <a
-                                    href="#"
-                                    class="btn btn-warning btn-sm"
-                                >
-
-                                    <i class="fas fa-edit"></i>
-
-                                    Modifier
-
-                                </a>
-
-
-
-                                <a
-                                    href="#"
-                                    class="btn btn-danger btn-sm"
-                                >
-
-                                    <i class="fas fa-trash"></i>
-
-                                    Supprimer
-
-                                </a>
-
-
+                                 <a href="detail.php?id=<?= urlencode($inscription['fk_id_eleve']); ?>"
+                                    class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                        Voir
+                                 </a>
+                                  
+                                 <a href="#"
+                                     class="btn btn-warning btn-sm">
+                                     <i class="fas fa-edit"></i>
+                                     Modifier
+                                 </a>
+                           
                             </td>
                             
                         </tr>
