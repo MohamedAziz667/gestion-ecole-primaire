@@ -13,11 +13,65 @@
 
     $nombreEnseignant = 1;
 
-    $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone, E.fonction, E.statut
-                        FROM ENSEIGNANT E;";
-    $stmtEnseignant = $connexion->prepare($rqtEnseignant);
-    $stmtEnseignant->execute();
-    $listeEnseignant = $stmtEnseignant->fetchAll(PDO::FETCH_ASSOC);
+    $rqtAnnee = "SELECT Id_anneeScolaire, annee, statut
+                FROM ANNEE_SCOLAIRE
+                WHERE statut <> 'preparation'
+                ORDER BY annee DESC;";
+    $stmtAnnee = $connexion->prepare($rqtAnnee);
+    $stmtAnnee->execute();
+    $listeAnnee = $stmtAnnee->fetchAll(PDO::FETCH_ASSOC);
+
+    $rqtAnneeActive = "SELECT Id_anneeScolaire, annee
+                FROM ANNEE_SCOLAIRE
+                WHERE statut = 'active';";
+    $stmtAnneeActive = $connexion->prepare($rqtAnneeActive);
+    $stmtAnneeActive->execute();
+    $anneeActive = $stmtAnneeActive->fetch(PDO::FETCH_ASSOC);
+
+    $anneeSelectionnee = $_GET['annee'] ?? '';
+    $anneeActiveDisponible = true;
+    $anneeVerif = false;
+    if ($anneeActive !== false) {
+        if ($anneeSelectionnee === '') {
+            $anneeSelectionnee = $anneeActive['Id_anneeScolaire'];
+        }
+        if (filter_var($anneeSelectionnee, FILTER_VALIDATE_INT) && $anneeSelectionnee > 0) {
+            $rqtVerifAnnee = "SELECT Id_anneeScolaire
+                            FROM ANNEE_SCOLAIRE
+                            WHERE (statut = 'cloturee' OR statut = 'active') AND Id_anneeScolaire = ?;";
+            $stmtVerifAnnee = $connexion->prepare($rqtVerifAnnee);
+            $stmtVerifAnnee->execute([$anneeSelectionnee]);
+            $anneeVerif = $stmtVerifAnnee->fetch(PDO::FETCH_ASSOC);
+        }
+        if ($anneeVerif === false) {
+            $anneeSelectionnee = $anneeActive['Id_anneeScolaire'];
+        }else{
+            $anneeSelectionnee = $anneeVerif['Id_anneeScolaire'];
+        }
+    }else{
+        $anneeActiveDisponible = false;
+    }
+    
+    $anneeSelectionneeInfo = null;
+    foreach ($listeAnnee as $annee) {
+        if ($annee['Id_anneeScolaire'] == $anneeSelectionnee) {
+            $anneeSelectionneeInfo = $annee;
+            break;
+        }
+    }
+
+    $listeEnseignant = [];
+
+    if ($anneeActiveDisponible) {
+        $rqtEnseignant = "SELECT E.ID_enseignant, E.nom_enseignant, E.prenom_enseignant, E.matricule, E.email, E.date_naissance, E.lieu_naissance, E.grade, E.telephone, E.fonction, E.statut
+                        FROM ENSEIGNANT E
+                        JOIN AFFECTATION_ENSEIGNANT AE ON AE.fk_id_enseignant = E.ID_enseignant
+                        WHERE AE.fk_id_anneeScolaire = ?;";
+
+        $stmtEnseignant = $connexion->prepare($rqtEnseignant);
+        $stmtEnseignant->execute([$anneeSelectionnee]);
+        $listeEnseignant = $stmtEnseignant->fetchAll(PDO::FETCH_ASSOC);
+    }
 ?>
     <div class="container-fluid px-4">
 
@@ -53,41 +107,49 @@
 
             </div>
 
+            <form method="GET" class="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mb-0">
+                        <label for="annee" class="form-label">
+                            Année scolaire
+                        </label>
 
-            <a
-                href="/Gestion_Ecole_Primaire/enseignants/ajouter.php"
-                class="btn btn-primary"
-            >
+                        <select
+                            name="annee" id="annee" class="form-select" onchange="this.form.submit()">
+                            <?php foreach($listeAnnee as $annee): ?>
+                                <option value="<?= $annee['Id_anneeScolaire'] ?>"
+                                <?= $annee['Id_anneeScolaire'] == $anneeSelectionnee ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($annee['annee']); ?>
+                                </option>
+                            <?php endforeach; ?>
 
-                <i class="fas fa-plus me-1"></i>
+                        </select>
 
-                Ajouter un enseignant
+                        <?php if ($anneeSelectionneeInfo !== null): ?>
+                            <?php if ($anneeSelectionneeInfo['statut'] === 'active'): ?>
+                                <span class="badge bg-success">Année active</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Année clôturée</span>
+                            <?php endif; ?>
+                        <?php endif; ?>
+            </form>
 
-            </a>
+            <?php if ($anneeSelectionneeInfo !== null && $anneeSelectionneeInfo['statut'] === 'active'): ?>
+                <a
+                    href="/Gestion_Ecole_Primaire/enseignants/ajouter.php"
+                    class="btn btn-primary"
+                >
 
+                    <i class="fas fa-plus me-1"></i>
+
+                    Ajouter un enseignant
+
+                </a>
+            <?php endif; ?>
 
         </div>
 
 
         <div class="card-body">
             
-
-            <div class="row mb-3">
-
-                <div class="col-md-4">
-
-                    <input
-                        type="text"
-                        class="form-control"
-                        placeholder="Rechercher un enseignant..."
-                    >
-
-                </div>
-
-
-            </div>
-
-
             <div class="w-100">
             <div class="table-responsive">
 

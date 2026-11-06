@@ -78,6 +78,14 @@
                 $stmtVerifFonction->execute();
                 $listeFonction = $stmtVerifFonction->fetch();
 
+                $rqtAnneeActive = "SELECT Id_anneeScolaire
+                   FROM ANNEE_SCOLAIRE
+                   WHERE statut = 'active';";
+
+                $stmtAnneeActive = $connexion->prepare($rqtAnneeActive);
+                $stmtAnneeActive->execute();
+                $anneeActive = $stmtAnneeActive->fetch(PDO::FETCH_ASSOC);
+
                 $rqtVerifEmail = "SELECT ID_enseignant
                                     FROM ENSEIGNANT
                                     WHERE email = ?;";
@@ -92,7 +100,11 @@
                 $stmtVerifMatricule->execute([$matricule]);
                 $listeMatricule = $stmtVerifMatricule->fetch();
     
-                if($listeEmail != false && $listeMatricule != false){
+                if ($anneeActive === false) {
+                    $_SESSION['message'] = "L'année scolaire sélectionnée n'est pas active.";
+                    $_SESSION['ancien_formulaire'] = $ancien_tableau;
+                    $_SESSION['type_message'] = "danger";
+                }elseif($listeEmail != false && $listeMatricule != false){
                     $_SESSION['message'] = "Erreur cet email et cette matricule existent déjà";
                     $_SESSION['ancien_formulaire'] = $ancien_tableau;
                     $_SESSION['type_message'] = "danger";
@@ -109,15 +121,29 @@
                     $_SESSION['ancien_formulaire'] = $ancien_tableau;
                     $_SESSION['type_message'] = "danger";
                 }else{
+                    $connexion->beginTransaction();
                     $rqtInsertEnseignant = "INSERT INTO ENSEIGNANT(nom_enseignant, prenom_enseignant, matricule, email, date_naissance, lieu_naissance, grade, telephone, fonction, statut)
                                             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
                     $stmtInsertEnseignant = $connexion->prepare($rqtInsertEnseignant);
                     $stmtInsertEnseignant->execute([$nom_enseignant, $prenom_enseignant, $matricule, $email, $date_naissance, $lieu_naissance, $grade, $telephone, $fonction, $statut]);
+                    $idEnseignant = $connexion->lastInsertId();
+
+                    $rqtAffectation = "INSERT INTO AFFECTATION_ENSEIGNANT
+                                    (fk_id_enseignant, fk_id_anneeScolaire)
+                                    VALUES (?, ?)";
+
+                    $stmtAffectation = $connexion->prepare($rqtAffectation);
+                    $stmtAffectation->execute([$idEnseignant, $anneeActive['Id_anneeScolaire']]);
+                    $connexion->commit();
                     $_SESSION['message'] = "Enseignant ajouté avec succès";
                     $_SESSION['type_message'] = "success";
                 }
                 
             } catch (PDOException $e) {
+                if ($connexion->inTransaction()) {
+                    $connexion->rollBack();
+                }
+                error_log($e->getMessage());
                 $_SESSION['message'] = "Une erreur est survenue lors de l'enregistrement.";
                 $_SESSION['type_message'] = "danger";
                 $_SESSION['ancien_formulaire'] = $ancien_tableau;

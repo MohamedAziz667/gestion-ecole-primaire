@@ -3,6 +3,70 @@
     include_once('includes/header.php');
     include_once('includes/navbar.php');
     include_once('includes/sidebar.php');
+    include_once('configuration/connexion.php');
+
+    $rqtNbEleve = "SELECT COUNT(DISTINCT E.Id_eleve) AS nb_eleve
+                    FROM ELEVE E
+                    JOIN INSCRIPTION I ON E.Id_eleve = I.fk_id_eleve
+                    JOIN ANNEE_SCOLAIRE A ON I.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    WHERE A.statut = 'active';";
+    $stmtNbEleve = $connexion->prepare($rqtNbEleve);
+    $stmtNbEleve->execute();
+    $nbEleve = $stmtNbEleve->fetch(PDO::FETCH_ASSOC);
+
+    $rqtNbClasse = "SELECT COUNT(DISTINCT C.Id_classe) AS nb_classe
+                    FROM CLASSE C
+                    JOIN ANNEE_SCOLAIRE A ON C.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    WHERE A.statut = 'active';";
+    $stmtNbClasse = $connexion->prepare($rqtNbClasse);
+    $stmtNbClasse->execute();
+    $nbClasse = $stmtNbClasse->fetch(PDO::FETCH_ASSOC);
+
+    $rqtNbEnseignant = "SELECT COUNT(DISTINCT E.ID_enseignant) AS nb_enseignant
+                    FROM ENSEIGNANT E
+                    JOIN AFFECTATION_ENSEIGNANT AE ON AE.fk_id_enseignant = E.ID_enseignant
+                    JOIN ANNEE_SCOLAIRE A ON AE.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    WHERE A.statut = 'active' AND E.statut = 'actif';";
+    $stmtNbEnseignant = $connexion->prepare($rqtNbEnseignant);
+    $stmtNbEnseignant->execute();
+    $nbEnseignant = $stmtNbEnseignant->fetch(PDO::FETCH_ASSOC);
+
+    $rqtInscription = "SELECT COUNT(DISTINCT I.fk_id_eleve) AS nb_eleve_inscrit
+                    FROM INSCRIPTION I
+                    JOIN ELEVE E ON I.fk_id_eleve = E.Id_eleve
+                    JOIN ANNEE_SCOLAIRE A ON I.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    WHERE A.statut = 'active';";
+    $stmtInscription = $connexion->prepare($rqtInscription);
+    $stmtInscription->execute();
+    $nbInscription = $stmtInscription->fetch(PDO::FETCH_ASSOC);
+
+    $rqtZoneGraphique = "SELECT C.nom_classe, COUNT(I.fk_id_eleve) AS nb_eleve_graphique
+                    FROM CLASSE C
+                    LEFT JOIN INSCRIPTION I ON C.Id_classe = I.fk_id_classe
+                    LEFT JOIN ANNEE_SCOLAIRE A ON I.fk_id_anneeScolaire = A.Id_anneeScolaire
+                    WHERE A.statut = 'active'
+                    GROUP BY C.Id_classe, C.nom_classe
+                    ORDER BY FIELD(C.nom_classe,
+                        'CI', 'CIA', 'CIB',
+                        'CP', 'CPA', 'CPB',
+                        'CE1', 'CE1A', 'CE1B',
+                        'CE2', 'CE2A', 'CE2B',
+                        'CM1', 'CM1A', 'CM1B',
+                        'CM2', 'CM2A', 'CM2B'
+                    ) ASC;";
+    $stmtZoneGraphique = $connexion->prepare($rqtZoneGraphique);
+    $stmtZoneGraphique->execute();
+    $zoneGraphique = $stmtZoneGraphique->fetchAll(PDO::FETCH_ASSOC);
+
+    $nomClasse = [];
+    $effectif = [];
+    foreach($zoneGraphique as $zone){
+        $nomClasse[] = $zone['nom_classe'];
+        $effectif[] = (int)$zone['nb_eleve_graphique'];
+    }
+
+    $nomClasseJS = json_encode($nomClasse);
+    $effectifJS = json_encode($effectif);
 ?>
 
     <div class="container-fluid px-4">
@@ -19,10 +83,6 @@
         </li>
 
     </ol>
-
-
-
-
 
     <!-- Cartes statistiques -->
 
@@ -49,7 +109,11 @@
                             </h5>
 
                             <h2>
-                                250
+                                <?php if($nbEleve === false): ?>
+                                    <?= "0"; ?>
+                                <?php else: ?>
+                                    <?= $nbEleve['nb_eleve']; ?>
+                                <?php endif; ?>
                             </h2>
 
                         </div>
@@ -65,34 +129,13 @@
 
 
                 <div class="card-footer d-flex align-items-center justify-content-between">
-
-
-                    <a
-                        class="small text-white stretched-link"
-                        href="/Gestion_Ecole_Primaire/eleves/liste.php"
-                    >
-
-                        Voir les élèves
-
-                    </a>
-
-
                     <i class="fas fa-angle-right"></i>
-
-
                 </div>
-
 
             </div>
 
 
         </div>
-
-
-
-
-
-
 
         <div class="col-xl-3 col-md-6">
 
@@ -102,9 +145,7 @@
 
                 <div class="card-body">
 
-
                     <div class="d-flex justify-content-between align-items-center">
-
 
                         <div>
 
@@ -113,7 +154,11 @@
                             </h5>
 
                             <h2>
-                                12
+                               <?php if($nbClasse === false): ?>
+                                    <?= "0"; ?>
+                                <?php else: ?>
+                                    <?= $nbClasse['nb_classe']; ?>
+                                <?php endif; ?>
                             </h2>
 
                         </div>
@@ -152,12 +197,6 @@
 
         </div>
 
-
-
-
-
-
-
         <div class="col-xl-3 col-md-6">
 
 
@@ -177,7 +216,11 @@
                             </h5>
 
                             <h2>
-                                18
+                                <?php if($nbEnseignant === false): ?>
+                                    <?= "0"; ?>
+                                <?php else: ?>
+                                    <?= $nbEnseignant['nb_enseignant']; ?>
+                                <?php endif; ?>
                             </h2>
 
                         </div>
@@ -216,12 +259,6 @@
 
         </div>
 
-
-
-
-
-
-
         <div class="col-xl-3 col-md-6">
 
 
@@ -241,7 +278,11 @@
                             </h5>
 
                             <h2>
-                                230
+                                <?php if($nbInscription === false): ?>
+                                    <?= "0"; ?>
+                                <?php else: ?>
+                                    <?= $nbInscription['nb_eleve_inscrit']; ?>
+                                <?php endif; ?>
                             </h2>
 
                         </div>
@@ -254,7 +295,6 @@
 
 
                 </div>
-
 
                 <div class="card-footer d-flex align-items-center justify-content-between">
 
@@ -282,11 +322,6 @@
 
 
     </div>
-
-
-
-
-
 
 
     <!-- Graphique + dernières informations -->
@@ -319,7 +354,9 @@
 
                         <span class="text-muted">
 
-                            Zone réservée au graphique des effectifs
+                            <div style="height: 300px;">
+                                <canvas id="graphiqueEffectifs"></canvas>
+                            </div>
 
                         </span>
 
@@ -334,11 +371,6 @@
 
 
         </div>
-
-
-
-
-
 
 
         <div class="col-xl-4">
@@ -386,11 +418,6 @@
     </div>
 
 
-
-
-
-
-
     <!-- Accès rapides -->
 
 
@@ -406,7 +433,6 @@
 
 
         </div>
-
 
 
         <div class="card-body">
@@ -433,10 +459,6 @@
 
                 </div>
 
-
-
-
-
                 <div class="col-md-3 mb-3">
 
 
@@ -455,9 +477,6 @@
                 </div>
 
 
-
-
-
                 <div class="col-md-3 mb-3">
 
 
@@ -474,9 +493,6 @@
 
 
                 </div>
-
-
-
 
 
                 <div class="col-md-3 mb-3">
@@ -512,3 +528,26 @@
 <?php
     include_once('includes/footer.php');
 ?>
+<script src="public/js/chart.umd.min.js"></script>
+<script>
+    
+    const nomClasse = <?= $nomClasseJS ?>;
+    const effectif = <?= $effectifJS ?>;
+
+    const zoneGraphique = document.getElementById('graphiqueEffectifs');
+
+    new Chart(zoneGraphique, {
+        type: 'bar',
+        data: {
+            labels: nomClasse,
+            datasets: [{
+                label: "Nombre d'élèves",
+                data: effectif
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+</script>
